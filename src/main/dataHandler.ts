@@ -57,7 +57,7 @@ export default function dataHandler(commandHandler, dataBuffer, e): string {
 
     //console.log(`DATA: ${data}`)
 
-    commandHandler.handleCommands(command, data)
+    commandHandler(command, data)
   })
   console.log('END OF COMMANDS')
   //const data = e.toString().split(' ')

@@ -5,13 +5,13 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import App from './App'
-import { trpcReact } from '../utils/trpc'
+import { trpc } from '../utils/trpc'
 
 export function Main(): JSX.Element {
   console.log('test')
   const [queryClient] = useState(() => new QueryClient())
   const [trpcClient] = useState(() =>
-    trpcReact.createClient({
+    trpc.createClient({
       links: [ipcLink()]
     })
   )
@@ -19,11 +19,11 @@ export function Main(): JSX.Element {
   return (
     <>
       <React.StrictMode>
-        <trpcReact.Provider client={trpcClient} queryClient={queryClient}>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
             <App />
           </QueryClientProvider>
-        </trpcReact.Provider>
+        </trpc.Provider>
       </React.StrictMode>
     </>
   )
