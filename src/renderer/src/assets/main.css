@@ -1,2 +1,24 @@
 @import './base.css';
 @import "tailwindcss";
+@theme {
+    --font-chakra-petch: Chakra-Petch, sans-serif;
+    --font-inter: "Inter", sans-serif;
+    --font-roboto: Roboto, sans-serif;
+    --font-oxygen: Oxygen, sans-serif;
+}
+
+@font-face {
+    font-family: Chakra-Petch;
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    src: url('./fonts/ChakraPetch-Regular.ttf')
+}
+
+@font-face {
+    font-family: Oxygen;
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    src: url('./fonts/Oxygen-Regular.ttf');
+}

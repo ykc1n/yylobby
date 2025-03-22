@@ -42,11 +42,13 @@
 ul {
   list-style: none;
 }
+*/
+
 
 body {
   min-height: 100vh;
   color: var(--color-text);
-  background: var(--color-background);
+  background: white;
   line-height: 1.6;
   font-family:
     Inter,
@@ -62,6 +64,6 @@ body {
     'Helvetica Neue',
     sans-serif;
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+
   -moz-osx-font-smoothing: grayscale;
-} */
+} 

@@ -1,7 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, webContents } from 'electron'
 import { join, sep } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/icon1.png?asset'
 import net from 'net'
 import { createHash } from 'crypto'
 import { replyHandler } from './commandHandler'
@@ -27,15 +27,16 @@ function login(data): void {
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
     resizable: true,
     show: false,
     autoHideMenuBar: true,
+    //fullscreen: true,
+    //titleBarStyle: 'hidden',
+    //titleBarOverlay: true,
     //backgroundMaterial: 'acrylic',
     //transparent: true,
     //frame:false,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
