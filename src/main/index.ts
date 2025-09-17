@@ -1,41 +1,20 @@
-import { app, shell, BrowserWindow, ipcMain, webContents } from 'electron'
-import { join, sep } from 'path'
+import { app, shell, BrowserWindow } from 'electron'
+import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon1.png?asset'
-import net from 'net'
-import { createHash } from 'crypto'
-import { replyHandler } from './commandHandler'
-import Lobby from './Lobby'
-import dataHandler from './dataHandler'
+import ZerokLobbyInterface from './ZerokLobbyInterface'
 import { attachWindow } from './ipc_setup'
 console.log('momo')
 
-const connection = new net.Socket()
-let isConnected = false
-let dataBuffer = ''
+export let lobbyInterface:ZerokLobbyInterface
 
-export const yyLobby = new Lobby()
-
-function login(data): void {
-  const command = `Login ${JSON.stringify(data)}\n`
-  connection.write(command, 'utf-8', () => {
-    console.log('write!')
-  })
-  //connection.send
-}
-
+let exist = false
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     resizable: true,
     show: false,
     autoHideMenuBar: true,
-    //fullscreen: true,
-    //titleBarStyle: 'hidden',
-    //titleBarOverlay: true,
-    //backgroundMaterial: 'acrylic',
-    //transparent: true,
-    //frame:false,
     ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -44,35 +23,19 @@ function createWindow(): void {
     }
   })
 
-  attachWindow(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
+   if(!exist){
+    exist = true
+  // const lobbyInterface = new ZerokLobbyInterface(zkconnection, lobby, mainWindow.webContents)
+  //  lobbyInterface.initialize()
+   }
+    //webcontents = mainWindow.webContents
+    // Attach TRPC IPC handler to the window
+    attachWindow(mainWindow)
     mainWindow.show()
-    mainWindow.webContents.openDevTools()
-    console.log('lololol')
-    //const lobby = new Lobby(mainWindow.webContents, ipcMain)
-    console.log(connection.readyState)
-    if (yyLobby.connected) {
-      //connection.destroy()
-      return
-    }
-    yyLobby.connect()
-    yyLobby.setConnectionListeners(mainWindow.webContents)
+    //mainWindow.webContents.openDevTools()
 
-    //  const commandHandler = new replyHandler(mainWindow.webContents)
-    //  connection
-    //    .setEncoding('utf-8')
-    //    .on('connect', () => {
-    //      console.log('connect')
-    //      isConnected = true
-    //    })
-    //    .on('data', (e) => {
-    //      dataBuffer = dataHandler(commandHandler, dataBuffer, e)
-    //    })
-    //    .on('close', () => {
-    //      console.log('connection closed!')
-    //      //connection.destroy()
-    //    })
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -103,49 +66,6 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-  ipcMain.on('register', (event, data) => {
-    console.log('register!!')
-    const account = {
-      Name: data.username,
-      UserID: 0,
-      InstallID: 0,
-      LobbyVersion: 0,
-      PasswordHash: createHash('md5').update(data.password).digest('base64'),
-      SteamAuthToken: '',
-      Dlc: ''
-    }
-    connection.write(`Register ${JSON.stringify(account)}\n`, () => {
-      console.log('sent!')
-    })
-    console.log(account)
-    //   const command = `Register ${JSON.stringify(DEV_ACCOUNT)}\n`
-    //   connection.write(command, 'utf-8', () => {
-    //     console.log('write!')
-    //   })
-  })
-
-  ipcMain.on('login', (event, data) => {
-    console.log('login!!!')
-    console.log(data)
-    const account = {
-      Name: data.username,
-      UserID: 0,
-      InstallID: 0,
-      LobbyVersion: 0,
-      PasswordHash: createHash('md5').update(data.password).digest('base64'),
-      SteamAuthToken: '',
-      Dlc: ''
-    }
-    connection.write(`Login ${JSON.stringify(account)}\n`, () => {
-      console.log('sent!')
-    })
-    console.log(account)
-  })
-
-  //ipcMain.on()
-
   createWindow()
 
   app.on('activate', function () {
@@ -159,8 +79,6 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  //connection.destroy()
-  //console.log('close?')
   if (process.platform !== 'darwin') {
     app.quit()
   }

@@ -24,47 +24,25 @@ function Welcome(props: { Engine: string; Game: string; UserCount: string }): JS
 }
 
 function App(): JSX.Element {
-  const [LoggedIn] = useState(true)
-  //const connectionStatus = trpc.getConnection.useQuery()
-  const welcomeMessage = trpc.welcome.useQuery(undefined, {
-    enabled: true
-  })
-  useEffect(() => {
-    window.api.mountListener('Welcome', (data) => {
-      console.log('test!!!')
-      console.log(data)
-      welcomeMessage.refetch()
-    })
-    return () => {
-      window.api.unmountListeners()
-    }
-  }, [])
-
-  useEffect(() => {
-    window.api.mountListener('LoginResponse', (data) => {})
-    return () => {
-      window.api.unmountListeners()
-    }
-  }, [])
+  const [LoggedIn] = useState(false)
+ 
   return (
     <>
-      <div className="min-h-[100vh] bg-[url(./cabinlob.png)] bg-cover bg-no-repeat">
-        <div className=" bg-neutral-950/50 backdrop-blur-lg grid grid-cols-3  justify-between">
-          <div className="flex">
-            <button className="font-chakra-petch font- text-xl font-thin text-neutral-400  border-neutral-400 p-3 transition-all duration-300 hover:text-white">
+      <div className="min-h-[100vh] bg-[url(./halloween.png)] bg-cover bg-center  bg-no-repeat">
+        <div className="  bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2  justify-between">
+          <div className="flex  ">
+            <button className="font-chakra-petch text-xl p-3 hover:text-white font-thin text-neutral-400 transition-all duration-300 hover:bg-black/20">
+              Home
+            </button>
+
+            <button className="font-chakra-petch shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.03)] hover:shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.1)] text-xl font-thin text-neutral-400  border-neutral-400 p-3 transition-all duration-300 hover:text-white">
               {' '}
               Multiplayer{' '}
             </button>
 
-            <button className="font-chakra-petch text-xl font-regular text-neutral-400  border-neutral-400 p-1 transition-all duration-300 hover:text-white">
+            <button className="font-chakra-petch  shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.03)] hover:shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.1)]  text-xl font-regular text-neutral-400  border-neutral-400 p-1 transition-all duration-300 hover:text-white">
               {' '}
               Singleplayer{' '}
-            </button>
-          </div>
-
-          <div className="flex justify-self-center">
-            <button className="font-chakra-petch text-4xl font-thin text-neutral-400 transition-all duration-300 hover:bg-black/20">
-              Home
             </button>
           </div>
 

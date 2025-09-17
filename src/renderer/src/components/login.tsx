@@ -22,23 +22,33 @@ export function Login(): JSX.Element {
   function parseResultCode(number): string {
     return loginResultCodes.get(number) ?? `IDK the result... code: ${number}`
   }
+  const test = trpc.greeting.useQuery({name:"helo"})
   const login = trpc.login.useMutation()
   const register = trpc.register.useMutation()
-  const loginResult = trpc.getLoginCode.useQuery()
+  //const loginResult = trpc.getLoginCode.useMutation()
+  //const getMatchMakerSetup = trpc.getMatchMakerSetup.useMutation()
   console.log('rerender?')
-  useEffect(() => {
-    window.api.mountListener('LoginUpdate', () => {
-      loginResult.refetch()
-    })
-  }, [])
-  return (
-    <div className="rounded bg-black/5 w-[fit-content] p-2">
-      <p className="text-2xl text-center font-bold">Login</p>
 
+  // if (getMatchMakerSetup.isSuccess) {
+  //   console.log('W??')
+  //   console.log(getMatchMakerSetup.data)
+  // }
+  // useEffect(() => {
+  //   window.api.mountListener('LoginUpdate', () => {
+  //     loginResult.mutate()
+  //   })
+  // }, [])
+  return (
+    
+    <div className=" rounded bg-neutral-950/50 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] backdrop-blur-xl text-neutral-200 font-chakra-petch w-[fit-content] p-2">
+      <p className="rounded text-neutral-200 font-chakra-petch text-2xl text-center font-thin">
+        Login
+      </p>
+{test.isSuccess ? test.data : "lmaooo"}
       <p>Username</p>
       <input
         name="userName"
-        className="bg-black/10 transition-color duration-300 hover:bg-black/15 m-2 p-1 px-2"
+        className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] rounded transition-color duration-300 hover:bg-white/5 m-2 p-1 px-2"
         onChange={(e) => {
           inputRef.current.username = e.target.value
         }}
@@ -48,7 +58,7 @@ export function Login(): JSX.Element {
         <p>Password</p>
         <input
           name="password"
-          className="bg-black/10 transition-color duration-300 hover:bg-black/15 m-2 p-1 px-2 "
+          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] rounded transition-color duration-300 hover:bg-white/5 m-2 p-1 px-2 "
           onChange={(e) => {
             inputRef.current.password = e.target.value
           }}
@@ -58,9 +68,11 @@ export function Login(): JSX.Element {
       <div className="flex justify-center my-2">
         <button
           //type="submit"
-          className="bg-black/10 transition-color duration-300 font-semibold hover:bg-black/15 p-1 px-2 rounded m-1"
+          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] transition-color duration-300 p-2 px-4 font-light hover:bg-white/5 p-1 px-2 rounded m-1"
           onClick={() => {
+            console.log("test")
             login.mutate(inputRef.current)
+            //getMatchMakerSetup.mutate()
           }}
         >
           Login
@@ -68,7 +80,7 @@ export function Login(): JSX.Element {
 
         <button
           //type="submit"
-          className="bg-black/10 transition-color duration-300 font-semibold hover:bg-black/15 p-1 px-2 rounded m-1"
+          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] p-2 px-4 transition-color duration-300 font-light hover:bg-white/5 p-1 px-2 rounded m-1"
           onClick={() => {
             register.mutate(inputRef.current)
           }}
@@ -77,7 +89,11 @@ export function Login(): JSX.Element {
         </button>
       </div>
       <div className="flex justify-center">
-        {loginResult.isSuccess ? parseResultCode(loginResult.data) : ' '}
+        {/* {loginResult.isSuccess ? parseResultCode(loginResult.data) : ' '} */}
+      </div>
+      <div>
+        mmsetup test
+        {/* {getMatchMakerSetup.isSuccess ? ' W' : ' Loading...'} */}
       </div>
     </div>
   )

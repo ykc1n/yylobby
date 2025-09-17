@@ -1,29 +1,28 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import type { Context } from './context'
-import { yyLobby } from '..'
-import { observable } from '@trpc/server/observable'
-import { register } from 'module'
+// import { lobbyInterface } from '../index'
 const t = initTRPC.context<Context>().create({
   isServer: true
 })
 
+
+
 export const appRouter = t.router({
+
+
   greeting: t.procedure
-    .input(
-      z.object({
-        name: z.string()
-      })
-    )
-    .query(({ input }) => {
-      return `Helo ${input.name}`
-    }),
-  getConnection: t.procedure.query(() => {
-    return yyLobby.getConnectionStatus()
-  }),
-  welcome: t.procedure.query(() => {
-    return yyLobby.welcomeMessage
-  }),
+.input(
+  z.object({
+    name:z.string()
+  })
+)
+.query(({input}) => {
+  console.log("bro")
+
+  return `omg omg ${input.name}`
+}),
+
   login: t.procedure
     .input(
       z.object({
@@ -31,10 +30,16 @@ export const appRouter = t.router({
         password: z.string()
       })
     )
-    .mutation(({ input }) => {
-      yyLobby.login(input.username, input.password)
+    .mutation((opts) => {
+      const input = opts.input
+      const lobbyInterface = opts.ctx.lobbyInterface
+      console.log("logging in")
+      console.log(lobbyInterface)
+      
+      lobbyInterface.login(input.username, input.password)
       return
     }),
+
   register: t.procedure
     .input(
       z.object({
@@ -42,12 +47,11 @@ export const appRouter = t.router({
         password: z.string()
       })
     )
-    .mutation(({ input }) => {
-      yyLobby.register(input.username, input.password)
+    .mutation((opts) => {
+      opts.ctx.lobbyInterface.login(opts.input.username, opts.input.password)
+     // lobbyInterface.register(input.username, input.password)
+      return
     }),
-  getLoginCode: t.procedure.query(() => {
-    return yyLobby.loginResultCode
-  })
 })
 
 export type AppRouter = typeof appRouter

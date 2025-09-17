@@ -27,5 +27,5 @@ export default tseslint.config(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
-  eslintConfigPrettier
+ // eslintConfigPrettier
 )

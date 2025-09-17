@@ -3,54 +3,56 @@ import { electronAPI, exposeElectronAPI } from '@electron-toolkit/preload'
 import { exposeElectronTRPC } from 'electron-trpc/main'
 // Custom APIs for renderer
 
+interface LoginData {
+  username: string
+  password: string
+}
+
+type IpcCallback = (data: any) => void
+type ListenerEntry = [string, IpcCallback]
+
 class ClientAPI {
-  sendLogin = (loginData): void => {
+  private activeListeners: ListenerEntry[] = []
+
+  sendLogin = (loginData: LoginData): void => {
     ipcRenderer.send('login', loginData)
   }
-  sendRegister = (registerData): void => {
+
+  sendRegister = (registerData: LoginData): void => {
     ipcRenderer.send('register', registerData)
   }
 
-  constructor() {
+  mountListener = (channel: string, callback: IpcCallback): void => {
+    const wrappedCallback = (_event: any, data: any) => callback(data)
+    ipcRenderer.on(channel, wrappedCallback)
+    this.activeListeners.push([channel, wrappedCallback])
+  }
+
+  unmountListeners = (): void => {
+    this.activeListeners.forEach(([channel, callback]) => {
+      ipcRenderer.off(channel, callback)
+    })
     this.activeListeners = []
   }
-  // onIDK = (cb):  => {
-  //   return new ApiFunction('idkCommand', cb)
-  // }
-  // onWelcome = (cb):  => {
-  //   return new ApiFunction('Welcome', cb)
-  // }
-  activeListeners: []
-  mountListener = (channel, cb): void => {
-    ipcRenderer.on(channel, (_event, data) => cb(data))
-    this.activeListeners.push([channel, cb])
+
+  // Specific listeners for type safety
+  onWelcome = (callback: (data: any) => void): void => {
+    this.mountListener('Welcome', callback)
   }
-  unmountListeners = (): void => {
-    this.activeListeners.forEach(([channel, cb]) => {
-      console.log('deregistering!')
-      ipcRenderer.off(channel, (_event, data) => cb(data))
-    })
+
+  onLoginUpdate = (callback: () => void): void => {
+    this.mountListener('LoginUpdate', callback)
+  }
+
+  onRawOutput = (callback: (data: { command: string; data: string }) => void): void => {
+    this.mountListener('RawOutput', callback)
+  }
+
+  onMMSetup = (callback:(data:any)=>void): void =>{
+    this.mountListener('mmsetup', callback)
   }
 }
 
-// class ApiFunction {
-//   cb
-//   channel
-//   constructor(channel, cb) {
-//     console.log(channel)
-//     this.cb = cb
-//     this.channel = channel
-//   }
-
-//   register = function (this: ApiFunction): void {
-//     ipcRenderer.on(this.channel, (_event, data) => this.cb(data))
-//   }
-//   deregister = function (this: ApiFunction): void {
-//     ipcRenderer.off(this.channel, (_event, data) => this.cb(data))
-//   }
-// }
-// const api = new ClientAPI()
-// console.log(api)
 
 process.once('loaded', async () => {
   exposeElectronTRPC()

@@ -20,5 +20,12 @@
     font-style: normal;
     font-weight: 100;
     font-display: swap;
-    src: url('./fonts/Oxygen-Regular.ttf');
+    src: url('./fonts/Oxygen-Light.ttf');
+}
+
+.test {
+
+
+background-image:  linear-gradient(#b2b2b2 1px, transparent 1px), linear-gradient(to right, #b2b2b2 1px, #e5e5f7 1px);
+background-size: 20px 20px;
 }
