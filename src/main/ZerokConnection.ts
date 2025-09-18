@@ -1,4 +1,5 @@
 import net from 'net'
+import { EventEmitter } from 'stream'
 
 
 
@@ -7,6 +8,7 @@ export default class ZerokConnection
 
   connected = false
   connection = new net.Socket()
+  emitter = new EventEmitter()
   ZK_SERVER = {
     host: 'zero-k.info',
     port: 8200
@@ -50,6 +52,7 @@ export default class ZerokConnection
         commandString.substring(seperator)
       ]
       console.log(`NAME: ${command}, DATA: ${data}`)
+      this.emitter.emit(command, data)
       //this.emit(command, data)
     })
     console.log('~~~~~~~~~END OF COMMANDS~~~~~~~~~~~~')
@@ -57,6 +60,11 @@ export default class ZerokConnection
 
 connect_to_zk():void{
   console.log("test")
+  if(this.connected){
+    this.connection.destroy()
+    this.connected = false
+    console.log("Reconnecting")
+  }
   this.connection.connect(this.ZK_SERVER)
   this.connection
       .setEncoding('utf-8')

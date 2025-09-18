@@ -13,6 +13,7 @@ export const createContext = async ({event}: {event: Electron.IpcMainInvokeEvent
   const window_id = window?.id ?? null
   const connection = new ZerokConnection();
   const lobby = new Lobby();
+  console.log("new context?")
   const lobbyInterface = new ZerokLobbyInterface(connection, lobby, window?.webContents)
   lobbyInterface.initialize()
   return Promise.resolve({ window_id, lobbyInterface })

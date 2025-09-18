@@ -2,12 +2,13 @@
 //import electronLogo from './assets/electron.svg'
 import { useState, useEffect } from 'react'
 import { Login } from './components/login'
-import { trpc } from '../utils/trpc'
 import HomePage from './pages/homepage'
 console.log('App loaded!')
 
+
 function Welcome(props: { Engine: string; Game: string; UserCount: string }): JSX.Element {
   //const data = JSON.parse
+
 
   return (
     <>

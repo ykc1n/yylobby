@@ -22,9 +22,10 @@ export function Login(): JSX.Element {
   function parseResultCode(number): string {
     return loginResultCodes.get(number) ?? `IDK the result... code: ${number}`
   }
-  const test = trpc.greeting.useQuery({name:"helo"})
+  //const test = trpc.greeting.useQuery({name:"helo"})
   const login = trpc.login.useMutation()
   const register = trpc.register.useMutation()
+  const welcome = trpc.welcomeStream.useSubscription()
   //const loginResult = trpc.getLoginCode.useMutation()
   //const getMatchMakerSetup = trpc.getMatchMakerSetup.useMutation()
   console.log('rerender?')
@@ -44,7 +45,8 @@ export function Login(): JSX.Element {
       <p className="rounded text-neutral-200 font-chakra-petch text-2xl text-center font-thin">
         Login
       </p>
-{test.isSuccess ? test.data : "lmaooo"}
+{welcome.data==undefined ? welcome.data : "test" }
+
       <p>Username</p>
       <input
         name="userName"

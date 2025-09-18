@@ -1,25 +1,27 @@
 import ZerokConnection from "./ZerokConnection"
 import Lobby from "./Lobby"
 import { createHash } from "crypto"
+import { EventEmitter } from "stream"
 
 export default class ZerokLobbyInterface{
     connection:ZerokConnection
     lobby:Lobby
+    emitter:EventEmitter
     webContents:Electron.WebContents
     constructor(connection:ZerokConnection,lobby:Lobby,webcontents:Electron.WebContents){
         this.connection = connection
         this.lobby = lobby
         this.webContents = webcontents
+        this.emitter = new EventEmitter
     }
 
     initialize():void{
-    
+
+       // console.log(this)
         this.connection.connect_to_zk()
 
+
     }
-
-
-
 
     login(username, password): void {
      console.log("test")

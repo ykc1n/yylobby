@@ -1,4 +1,4 @@
-import { ipcLink } from 'electron-trpc/renderer'
+import { ipcLink } from '@janwirth/electron-trpc-link/renderer'
 import './assets/main.css'
 import ReactDOM from 'react-dom/client'
 import React from 'react'

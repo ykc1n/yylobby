@@ -1,6 +1,8 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import type { Context } from './context'
+import { on } from 'events'
+import { WelcomeCommand } from '../commands'
 // import { lobbyInterface } from '../index'
 const t = initTRPC.context<Context>().create({
   isServer: true
@@ -52,6 +54,17 @@ export const appRouter = t.router({
      // lobbyInterface.register(input.username, input.password)
       return
     }),
+
+    welcomeStream: t.procedure
+    .subscription(async function* (opts){
+      const stream = opts.ctx.lobbyInterface.emitter
+      for await (const [data] of on(stream,"welcome")){
+      
+       yield data as object; 
+      }
+        
+    })
+
 })
 
 export type AppRouter = typeof appRouter
