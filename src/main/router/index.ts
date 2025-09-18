@@ -2,7 +2,7 @@ import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import type { Context } from './context'
 import { on } from 'events'
-import { WelcomeCommand } from '../commands'
+import  * as Commands from '../commands'
 // import { lobbyInterface } from '../index'
 const t = initTRPC.context<Context>().create({
   isServer: true
@@ -55,14 +55,42 @@ export const appRouter = t.router({
       return
     }),
 
-    welcomeStream: t.procedure
-    .subscription(async function* (opts){
-      const stream = opts.ctx.lobbyInterface.emitter
-      for await (const [data] of on(stream,"welcome")){
-      
-       yield data as object; 
+    // welcomeStream: t.procedure
+    // .subscription(async function* (opts){
+    //   console.log("listening and learning")
+    //   if(opts.ctx.lobbyInterface.lobby.welcomeMessage != null){
+    //     console.log("already exists!~")
+    //     return opts.ctx.lobbyInterface.lobby.welcomeMessage as object
+    //   }
+    //   const stream = opts.ctx.lobbyInterface.emitter
+    //   for await (const [data] of on(stream,"Welcome", {signal:opts.signal})){
+    //   yield data as object;
+    //   }
+    // }),
+
+    lobbyUpdateStream: t.procedure
+    .subscription( async function* (opts){
+      console.log("omg")
+      const stream = opts.ctx.lobbyInterface.clientEvents
+      for await (const [data] of on(stream, "lobbyUpdate", {signal:opts.signal})){
+      console.log(data)
+      yield data as object;
       }
-        
+
+    }),
+
+    listenerStream: t.procedure
+    .input(z.object({
+      command: z.string()
+    }))
+    .subscription(async function* (opts){
+      console.log("waaaa")
+      const stream = opts.ctx.lobbyInterface.emitter
+      for await (const [data] of on(stream, opts.input.command, {signal:opts.signal})){
+      console.log(data)
+      yield data as object;
+      }
+
     })
 
 })

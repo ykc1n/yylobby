@@ -2,25 +2,28 @@ import ZerokConnection from "./ZerokConnection"
 import Lobby from "./Lobby"
 import { createHash } from "crypto"
 import { EventEmitter } from "stream"
-
+import {RegisterCommand} from "./commands"
 export default class ZerokLobbyInterface{
     connection:ZerokConnection
     lobby:Lobby
-    emitter:EventEmitter
     webContents:Electron.WebContents
+    serverEvents:EventEmitter
+    clientEvents:EventEmitter
     constructor(connection:ZerokConnection,lobby:Lobby,webcontents:Electron.WebContents){
         this.connection = connection
         this.lobby = lobby
         this.webContents = webcontents
-        this.emitter = new EventEmitter
+        this.serverEvents = this.connection.emitter
+        this.clientEvents = new EventEmitter()
     }
 
     initialize():void{
 
        // console.log(this)
         this.connection.connect_to_zk()
-
-
+        this.serverEvents.on('Welcome', this.handleWelcome)
+        this.serverEvents.on('LoginResponse', this.handleLoginResponse)
+        this.serverEvents.on('handleJoinChannelResponse', this.handleJoinChannelResponse)
     }
 
     login(username, password): void {
@@ -53,18 +56,20 @@ export default class ZerokLobbyInterface{
       SteamAuthToken: '',
       Dlc: ''
     }
+    //let registerCommand:RegisterCommand = {name:"Register", data:account}
     this.connection.sendCommand("Register",account)
   }
 
+  sendLobbyUpdate():void{
+    this.clientEvents.emit("lobbyUpdate", this.lobby)
+  }
+
   loginResultCode = -1
-  handleLoginResponse = (JSONdata): void => {
+  handleLoginResponse(JSONdata): void{
     const data = JSON.parse(JSONdata)
     console.log('login response!')
-    //if(data.Response)
     this.loginResultCode = data.ResultCode
-
-    this.webContents?.send('LoginUpdate')
-
+    this.clientEvents.emit("LoginResponse", data);
     console.log(data)
   }
 
@@ -74,25 +79,16 @@ export default class ZerokLobbyInterface{
     console.log(data)
   }
 
-  handleSay = (JSONdata: string): void => {
-    const data = JSON.parse(JSONdata)
-    this.webContents?.send('ChatMessage', data)
-  }
-
-  // Send connection status updates to renderer
-  sendConnectionStatus = (status: 'connected' | 'disconnected' | 'connecting'): void => {
-    this.webContents?.send('ConnectionStatus', { status })
-  }
-
-  // Send user list updates
-  sendUserListUpdate = (users: unknown[]): void => {
-    this.webContents?.send('UserListUpdate', users)
-  }
-
   handleWelcome = (JSONdata: string): void => {
     const data = JSON.parse(JSONdata)
-    this.lobby.welcomeMessage = data
-    this.webContents?.send('Welcome', data)
+    this.lobby.setWelcomeMessage(data)
+    this.sendLobbyUpdate()
+  }
+
+  handleJoinChannelResponse(JSONdata:string):void{
+    const data = JSON.parse(JSONdata)
+    this.lobby.channels.set(data.name, data)
+    this.sendLobbyUpdate()
   }
 
 }

@@ -2,11 +2,16 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon1.png?asset'
+import Lobby from './Lobby'
+import ZerokConnection from './ZerokConnection'
 import ZerokLobbyInterface from './ZerokLobbyInterface'
 import { attachWindow } from './ipc_setup'
 console.log('momo')
 
-export let lobbyInterface:ZerokLobbyInterface
+// Create singleton instances
+const zkconnection = new ZerokConnection()
+export const lobby = new Lobby()
+export let lobbyInterface: ZerokLobbyInterface
 
 let exist = false
 function createWindow(): void {
@@ -27,10 +32,10 @@ function createWindow(): void {
   mainWindow.on('ready-to-show', () => {
    if(!exist){
     exist = true
-  // const lobbyInterface = new ZerokLobbyInterface(zkconnection, lobby, mainWindow.webContents)
-  //  lobbyInterface.initialize()
+    // Initialize the lobby interface once
+    lobbyInterface = new ZerokLobbyInterface(zkconnection, lobby, mainWindow.webContents)
+    lobbyInterface.initialize()
    }
-    //webcontents = mainWindow.webContents
     // Attach TRPC IPC handler to the window
     attachWindow(mainWindow)
     mainWindow.show()

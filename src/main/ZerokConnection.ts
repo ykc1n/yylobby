@@ -63,7 +63,7 @@ connect_to_zk():void{
   if(this.connected){
     this.connection.destroy()
     this.connected = false
-    console.log("Reconnecting")
+    console.log("Reconnecting. ")
   }
   this.connection.connect(this.ZK_SERVER)
   this.connection

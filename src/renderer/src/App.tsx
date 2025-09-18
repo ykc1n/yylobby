@@ -3,22 +3,26 @@
 import { useState, useEffect } from 'react'
 import { Login } from './components/login'
 import HomePage from './pages/homepage'
+import { useLobby } from './client'
 console.log('App loaded!')
 
 
-function Welcome(props: { Engine: string; Game: string; UserCount: string }): JSX.Element {
-  //const data = JSON.parse
-
+function Welcome(): JSX.Element {
+  //const data = JSON.pars
+   const lobby = useLobby()
+  // const engine = useLobby((state)=>state.Engine)
+  // const game = useLobby((state)=>state.Game)
+  // const userCount = useLobby((state)=>state.UserCount)
 
   return (
     <>
       <div className="text-2xl">Welcome!</div>
-      <div className="flex ">
-        <div>{props.Engine}</div>
+      <div className="flex text-white gap-8">
+        <div>{lobby.Engine}</div>
 
-        <div>{props.Game}</div>
+        <div>{lobby.Game}</div>
 
-        <div>Users Online: {props.UserCount}</div>
+        <div>Users Online: {lobby.UserCount}</div>
       </div>
     </>
   )
@@ -54,6 +58,7 @@ function App(): JSX.Element {
           </div>
         </div>
         <div className="">
+          <Welcome/> 
           <div className="flex justify-center py-2">{LoggedIn ? ' ' : <Login />}</div>
 
           <HomePage />

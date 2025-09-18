@@ -1,31 +1,39 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { trpc } from '../../utils/trpc'
-import { useState } from 'react'
 export function Login(): JSX.Element {
-  const [LoginResponse, setLoginResponse] = useState(-1)
-
   const inputRef = useRef({
     username: 'testbot12345',
     password: '123'
   })
 
-  const loginResultCodes = new Map<number, string>([
-    //set by me lel
-    [-1, ''],
-    //set by API (LobbyClient/Protocol in zk infra)
-    [0, 'Login Successful!'],
-    [1, 'Invalid Name'],
-    [2, 'Invalid Password'],
-    [4, 'Ban hammeur']
-  ])
+  // const loginResultCodes = new Map<number, string>([
+  //   //set by me lel
+  //   [-1, ''],
+  //   //set by API (LobbyClient/Protocol in zk infra)
+  //   [0, 'Login Successful!'],
+  //   [1, 'Invalid Name'],
+  //   [2, 'Invalid Password'],
+  //   [4, 'Ban hammeur']
+  // ])
 
-  function parseResultCode(number): string {
-    return loginResultCodes.get(number) ?? `IDK the result... code: ${number}`
-  }
+  // function parseResultCode(number): string {
+  //   return loginResultCodes.get(number) ?? `IDK the result... code: ${number}`
+  // }
   //const test = trpc.greeting.useQuery({name:"helo"})
   const login = trpc.login.useMutation()
   const register = trpc.register.useMutation()
-  const welcome = trpc.welcomeStream.useSubscription()
+  //const welcome = trpc.welcomeStream.useSubscription()
+  //const loginResult = trpc.listenerStream.useSubscription({command:"LoginResponse"})
+  //const updateEngine = useLobby(state => state.setEngine)
+  //const updateGame = useLobby(state => state.setGame)
+  //const updateUserCount = useLobby(state => state.setUserCount)
+  // if(welcome.data?.length){
+  //   const data = JSON.parse(welcome.data)
+  //   updateEngine(data.Engine)
+  //   updateGame(data.Game)
+  //   updateUserCount(data.UserCount)
+
+  // }
   //const loginResult = trpc.getLoginCode.useMutation()
   //const getMatchMakerSetup = trpc.getMatchMakerSetup.useMutation()
   console.log('rerender?')
@@ -45,7 +53,7 @@ export function Login(): JSX.Element {
       <p className="rounded text-neutral-200 font-chakra-petch text-2xl text-center font-thin">
         Login
       </p>
-{welcome.data==undefined ? welcome.data : "test" }
+{/* {welcome.data?.length ? JSON.parse(welcome.data).Engine : "test" } */}
 
       <p>Username</p>
       <input
