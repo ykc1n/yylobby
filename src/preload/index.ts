@@ -11,45 +11,10 @@ interface LoginData {
 type IpcCallback = (data: any) => void
 type ListenerEntry = [string, IpcCallback]
 
-class ClientAPI {
-  private activeListeners: ListenerEntry[] = []
 
-  sendLogin = (loginData: LoginData): void => {
-    ipcRenderer.send('login', loginData)
-  }
-
-  sendRegister = (registerData: LoginData): void => {
-    ipcRenderer.send('register', registerData)
-  }
-
-  mountListener = (channel: string, callback: IpcCallback): void => {
-    const wrappedCallback = (_event: any, data: any) => callback(data)
-    ipcRenderer.on(channel, wrappedCallback)
-    this.activeListeners.push([channel, wrappedCallback])
-  }
-
-  unmountListeners = (): void => {
-    this.activeListeners.forEach(([channel, callback]) => {
-      ipcRenderer.off(channel, callback)
-    })
-    this.activeListeners = []
-  }
-
-  // Specific listeners for type safety
-  onWelcome = (callback: (data: any) => void): void => {
-    this.mountListener('Welcome', callback)
-  }
-
-  onLoginUpdate = (callback: () => void): void => {
-    this.mountListener('LoginUpdate', callback)
-  }
-
-  onRawOutput = (callback: (data: { command: string; data: string }) => void): void => {
-    this.mountListener('RawOutput', callback)
-  }
-
-  onMMSetup = (callback:(data:any)=>void): void =>{
-    this.mountListener('mmsetup', callback)
+class LobbyRendererInterface{
+  onLobbyUpdate = (callback):void => {
+    ipcRenderer.on('lobbyUpdate', (_event, data)=>callback(data))
   }
 }
 
@@ -63,14 +28,17 @@ process.once('loaded', async () => {
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
+    console.log()
     //contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', new ClientAPI())
+    const api = new LobbyRendererInterface()
+    contextBridge.exposeInMainWorld('zkLobbyApi', api)
     //exposeElectronTRPC()
     //contextBridge.exposeInMainWorld
   } catch (error) {
     console.error(error)
   }
 } else {
+  console.log("lmaoooooo")
   // @ts-ignore (define in dts)
   window.electron = electronAPI
   // @ts-ignore (define in dts)

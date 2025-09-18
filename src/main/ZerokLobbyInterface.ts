@@ -61,7 +61,8 @@ export default class ZerokLobbyInterface{
   }
 
   sendLobbyUpdate():void{
-    this.clientEvents.emit("lobbyUpdate", this.lobby)
+    console.log("sending lobby update")
+    this.webContents.send("lobbyUpdate", this.lobby)
   }
 
   loginResultCode = -1

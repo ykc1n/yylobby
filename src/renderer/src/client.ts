@@ -1,6 +1,7 @@
 import {create} from 'zustand'
 import {trpc} from "../utils/trpc";
 import { TypeOf } from 'zod';
+import { useEffect } from 'react';
 const LobbyStore  = create(
     (set)=>({
      Engine: "N/A",
@@ -21,15 +22,14 @@ export function useLobby():object{
     console.log("lul")
 
     const lobby = LobbyStore(state => state);     
-    
-    
-    trpc.lobbyUpdateStream.useSubscription(undefined, {
-        onData: (data) =>{
-            console.log("woooaah..")
-            console.log(data)
-            LobbyStore.setState(data);
-        }
-    })
+
+    useEffect(()=>{
+        window.zkLobbyApi.onLobbyUpdate((lobby)=>{
+            console.log(lobby)
+            console.log("y combinating")
+            LobbyStore.setState(lobby);
+        })
+    },[])
 
 
 
