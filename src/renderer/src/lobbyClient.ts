@@ -1,8 +1,10 @@
 import {create} from 'zustand'
 import {trpc} from "../utils/trpc";
 import { TypeOf } from 'zod';
-const LobbyStore  = create(
+export const LobbyStore  = create(
     (set)=>({
+     LoggedIn: false,
+     LoginStatusMessage: "N/A",
      Engine: "N/A",
      Game: "N/A",
      UserCount: 0,
@@ -10,15 +12,11 @@ const LobbyStore  = create(
 }) 
 )
 
-const connectionStore = create(
-    set =>({
-        zk_conn: undefined,
-        setConnection: (newConnection):void => set({zk_conn: newConnection})
-    })
-)
+
 
 export function useLobby():object{
     console.log("lul")
+    // const initialLobby = trpc.getLobby.useQuery();
 
     const lobby = LobbyStore(state => state);     
     

@@ -1,52 +1,20 @@
 import { useRef } from 'react'
 import { trpc } from '../../utils/trpc'
+import { LobbyStore } from '@renderer/lobbyClient'
 export function Login(): JSX.Element {
   const inputRef = useRef({
     username: 'testbot12345',
     password: '123'
   })
 
-  // const loginResultCodes = new Map<number, string>([
-  //   //set by me lel
-  //   [-1, ''],
-  //   //set by API (LobbyClient/Protocol in zk infra)
-  //   [0, 'Login Successful!'],
-  //   [1, 'Invalid Name'],
-  //   [2, 'Invalid Password'],
-  //   [4, 'Ban hammeur']
-  // ])
 
-  // function parseResultCode(number): string {
-  //   return loginResultCodes.get(number) ?? `IDK the result... code: ${number}`
-  // }
-  //const test = trpc.greeting.useQuery({name:"helo"})
+
   const login = trpc.login.useMutation()
   const register = trpc.register.useMutation()
-  //const welcome = trpc.welcomeStream.useSubscription()
-  //const loginResult = trpc.listenerStream.useSubscription({command:"LoginResponse"})
-  //const updateEngine = useLobby(state => state.setEngine)
-  //const updateGame = useLobby(state => state.setGame)
-  //const updateUserCount = useLobby(state => state.setUserCount)
-  // if(welcome.data?.length){
-  //   const data = JSON.parse(welcome.data)
-  //   updateEngine(data.Engine)
-  //   updateGame(data.Game)
-  //   updateUserCount(data.UserCount)
+  const lobby = LobbyStore((state) => state)
 
-  // }
-  //const loginResult = trpc.getLoginCode.useMutation()
-  //const getMatchMakerSetup = trpc.getMatchMakerSetup.useMutation()
   console.log('rerender?')
 
-  // if (getMatchMakerSetup.isSuccess) {
-  //   console.log('W??')
-  //   console.log(getMatchMakerSetup.data)
-  // }
-  // useEffect(() => {
-  //   window.api.mountListener('LoginUpdate', () => {
-  //     loginResult.mutate()
-  //   })
-  // }, [])
   return (
     
     <div className=" rounded bg-neutral-950/50 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] backdrop-blur-xl text-neutral-200 font-chakra-petch w-[fit-content] p-2">
@@ -102,7 +70,7 @@ export function Login(): JSX.Element {
         {/* {loginResult.isSuccess ? parseResultCode(loginResult.data) : ' '} */}
       </div>
       <div>
-        mmsetup test
+       {lobby.LoginStatusMessage}
         {/* {getMatchMakerSetup.isSuccess ? ' W' : ' Loading...'} */}
       </div>
     </div>

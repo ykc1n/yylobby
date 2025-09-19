@@ -1,5 +1,7 @@
 //import { ElectronAPI } from '@electron-toolkit/preload'
  export default class Lobby {
+  LoggedIn = false
+  LoginStatusMessage="N/A"
   Engine = "N/A"
   Game="N/A"
   UserCount=0

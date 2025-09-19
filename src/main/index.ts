@@ -34,7 +34,7 @@ function createWindow(): void {
     exist = true
     // Initialize the lobby interface once
     lobbyInterface = new ZerokLobbyInterface(zkconnection, lobby, mainWindow.webContents)
-    lobbyInterface.initialize()
+    //lobbyInterface.initialize()
    }
     // Attach TRPC IPC handler to the window
     attachWindow(mainWindow)

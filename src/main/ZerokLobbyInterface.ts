@@ -9,6 +9,16 @@ export default class ZerokLobbyInterface{
     webContents:Electron.WebContents
     serverEvents:EventEmitter
     clientEvents:EventEmitter
+    loginResultCodes = new Map<number, string>([
+    //set by me lel
+    [-1, ''],
+    //set by API (LobbyClient/Protocol in zk infra)
+    [0, ''], //successful login
+    [1, 'Invalid Name'],
+    [2, 'Invalid Password'],
+    [4, 'Ban hammeur']
+  ])
+
     constructor(connection:ZerokConnection,lobby:Lobby,webcontents:Electron.WebContents){
         this.connection = connection
         this.lobby = lobby
@@ -26,11 +36,8 @@ export default class ZerokLobbyInterface{
         this.serverEvents.on('handleJoinChannelResponse', this.handleJoinChannelResponse)
     }
 
-    login(username, password): void {
+    login = (username, password): void => {
      console.log("test")
-    if (this.loginResultCode == 0) {
-      return
-    }
     const account = {
       Name: username,
       UserID: 0,
@@ -43,7 +50,7 @@ export default class ZerokLobbyInterface{
     this.connection.sendCommand("Login", account)
   }
 
-  register(username, password): void {
+  register = (username, password):void => {
     if (this.loginResultCode == 0) {
       return
     }
@@ -60,16 +67,21 @@ export default class ZerokLobbyInterface{
     this.connection.sendCommand("Register",account)
   }
 
-  sendLobbyUpdate():void{
+  sendLobbyUpdate = ():void=>{
     this.clientEvents.emit("lobbyUpdate", this.lobby)
   }
 
-  loginResultCode = -1
-  handleLoginResponse(JSONdata): void{
+  handleLoginResponse = (JSONdata): void=>{
     const data = JSON.parse(JSONdata)
     console.log('login response!')
-    this.loginResultCode = data.ResultCode
-    this.clientEvents.emit("LoginResponse", data);
+    console.log(this.lobby)
+    //this.loginResultCode = data.ResultCode
+
+    if(data.ResultCode == 0){
+      this.lobby.LoggedIn = true
+    }
+    this.lobby.LoginStatusMessage = this.loginResultCodes.get(data.ResultCode)??"Not sure what happened."
+    this.sendLobbyUpdate()
     console.log(data)
   }
 

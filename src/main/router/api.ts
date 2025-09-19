@@ -67,12 +67,19 @@ export const appRouter = t.router({
     //   yield data as object;
     //   }
     // }),
+    getLobby:t.procedure
+    .query((opts)=>{
+      console.log("getting lobby")
+      //console.log(opts.ctx.lobbyInterface.lobby)
+      return opts.ctx.lobbyInterface.lobby
+    }),
 
     lobbyUpdateStream: t.procedure
     .subscription( async function* (opts){
-      console.log("omg")
+      console.log("erm")
       const stream = opts.ctx.lobbyInterface.clientEvents
       for await (const [data] of on(stream, "lobbyUpdate", {signal:opts.signal})){
+        console.log("sending data!")
       console.log(data)
       yield data as object;
       }

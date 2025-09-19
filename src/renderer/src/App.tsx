@@ -3,20 +3,22 @@
 import { useState, useEffect } from 'react'
 import { Login } from './components/login'
 import HomePage from './pages/homepage'
-import { useLobby } from './client'
+import { LobbyStore, useLobby } from './lobbyClient'
+import BattleList from './BattleList'
+import Chat from './Chat'
 console.log('App loaded!')
 
 
 function Welcome(): JSX.Element {
   //const data = JSON.pars
-   const lobby = useLobby()
+  const lobby = LobbyStore(state=>state)
   // const engine = useLobby((state)=>state.Engine)
   // const game = useLobby((state)=>state.Game)
   // const userCount = useLobby((state)=>state.UserCount)
 
   return (
     <>
-      <div className="text-2xl">Welcome!</div>
+      {/* <div className="text-2xl">Welcome!</div> */}
       <div className="flex text-white gap-8">
         <div>{lobby.Engine}</div>
 
@@ -29,11 +31,11 @@ function Welcome(): JSX.Element {
 }
 
 function App(): JSX.Element {
-  const [LoggedIn] = useState(false)
+ const lobby = useLobby()
  
   return (
     <>
-      <div className="min-h-[100vh] bg-[url(./halloween.png)] bg-cover bg-center  bg-no-repeat">
+      <div className="min-h-[100vh] bg-[url(./halloween.png)] bg-cover bg-center  bg-no-repeat font-chakra-petch text-white">
         <div className="  bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2  justify-between">
           <div className="flex  ">
             <button className="font-chakra-petch text-xl p-3 hover:text-white font-thin text-neutral-400 transition-all duration-300 hover:bg-black/20">
@@ -59,8 +61,13 @@ function App(): JSX.Element {
         </div>
         <div className="">
           <Welcome/> 
-          <div className="flex justify-center py-2">{LoggedIn ? ' ' : <Login />}</div>
-
+          {/* <div className="flex justify-center py-2">{lobby.LoggedIn ? ' ' : <Login />}</div> */}
+          <div className='grid grid-cols-3'>
+            <div className="col-span-2">    
+          <BattleList/>
+          </div>  
+          <Chat/> 
+          </div>
           <HomePage />
         </div>
       </div>
