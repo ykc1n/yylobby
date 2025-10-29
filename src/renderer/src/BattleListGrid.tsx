@@ -1,4 +1,4 @@
-export default function BattleList():JSX.Element{
+export default function BattleListGrid():JSX.Element{
     const numOfBattles = 50
     const battles = []
     for(let i =0;i<numOfBattles;i++){
@@ -19,7 +19,7 @@ export default function BattleList():JSX.Element{
            
 
            
-           <div className="px-5 grid grid-cols-1 h-[80vh] overflow-y-auto gap-2 ">
+           <div className="px-5 grid grid-cols-3 h-[80vh] overflow-y-auto gap-8 ">
             {battles}
            </div>
          

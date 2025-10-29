@@ -7,7 +7,7 @@
     "src/preload/*.d.ts",
     "src/renderer/utils/*",
     "src/main/router"
-  ],
+, "src/renderer/MultiplayerPage.tsx"  ],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",

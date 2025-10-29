@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Context } from './context'
 import { on } from 'events'
 import  * as Commands from '../commands'
+import fs from 'node:fs'
 // import { lobbyInterface } from '../index'
 const t = initTRPC.context<Context>().create({
   isServer: true
@@ -98,6 +99,26 @@ export const appRouter = t.router({
       yield data as object;
       }
 
+    }),
+    getReplays:t.procedure
+    .query((opts)=>{
+      console.log("helohelo")
+      let files = []
+      let basePath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos'
+      if(fs.existsSync('C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos')){
+        console.log("waiiiit")
+        const directory = fs.readdirSync(basePath)
+        files = directory.filter((filename)=>{
+          return fs.statSync(`${basePath}/${filename}`)
+        })
+        .sort((a,b)=>{
+          let astat = fs.statSync(`${basePath}/${a}`)
+          let bstat = fs.statSync(`${basePath}/${b}`)
+          return new Date(bstat.birthtime).getTime() - new Date(astat.birthtime).getTime()
+        })
+        console.log(files)
+      }
+      return {data:files.slice(0,10)}
     })
 
 })
