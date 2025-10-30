@@ -49,12 +49,21 @@ export class ReplayManager{
             .map((result, index) => {
                 if (result.status === 'fulfilled') {
                     const replay = result.value
-                    //console.log(replay)
-                    //console.log(currentReplays[index])
+                    
+                    // Calculate game type (e.g., "4v4", "3v2v1")
+                    const teamCounts = new Map<number, number>()
+                    replay.info.players.forEach(player => {
+                        const teamId = player.allyTeamId
+                        teamCounts.set(teamId, (teamCounts.get(teamId) || 0) + 1)
+                    })
+                    const teamSizes = Array.from(teamCounts.values()).sort((a, b) => b - a)
+                    const gameType = teamSizes.join('v')
+                    
                     return {
                         filename: currentReplays[index],
                         map: replay.info.meta.map,
                         game: replay.info.meta.game,
+                        gameType: gameType,
                         duration: replay.info.meta.durationMs,
                         date: replay.info.meta.startTime,
                         players: replay.info.players,

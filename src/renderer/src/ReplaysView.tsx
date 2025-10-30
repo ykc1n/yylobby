@@ -1,29 +1,43 @@
 import {trpc} from '../utils/trpc'
 
+interface ReplayData {
+    filename: string
+    map: string
+    game: string
+    gameType: string
+    duration: number
+    date: Date
+    players: any[]
+    winners?: number[]
+}
+
 function Replay(props:{
-    replayOpener,
-    replayData:object
+    replayOpener: unknown
+    replayData: ReplayData
 }):JSX.Element{
   
     const map = props.replayData.map
     const date = props.replayData.date
     const players = props.replayData.players
+    const gameType = props.replayData.gameType
+    const durationMinutes = Math.floor(props.replayData.duration / 60000)
     const teams = new Map();
-    const winners = props.replayData.winners[0]
+    const winners = props.replayData.winners?.[0]
     players.forEach(player => {
         console.log(player)
         if(!teams.has(player.allyTeamId)){
             teams.set(player.allyTeamId, [])
         }
-        let team = teams.get(player.allyTeamId)
+        const team = teams.get(player.allyTeamId)
         team.push(player)
         teams.set(player.allyTeamId,team)
     })
     console.log("---------")
     console.log(players)
     console.log(teams)
+
     //console.log(teams.get(0))
-    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2 bg-neutral-950 border-3 ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
+    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2  ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
     .toArray()
     console.log(teamDivs)
     const handleOpenReplay = ():void => {
@@ -40,13 +54,13 @@ function Replay(props:{
 
     return (<div className='px-4 py-2 bg-neutral-900 hover:bg-neutral-700 transition-all duration-300 m-1'
         onClick={handleOpenReplay}>
-        Map: {map}
-        <div className="text-base text-neutral-500 ">{date ? new Date(date).toLocaleString() : 'Unknown'}</div>
-        <div className='flex'>
-             {teamDivs.flatMap( (div) => [<p key={div}>vs</p>, div].slice(1))}
+        <div className="font-semibold">{gameType} on {map}</div>
+        <div className="text-base text-neutral-500 ">
+            {date ? new Date(date).toLocaleString() : 'Unknown'} • {durationMinutes} min
         </div>
-       
-        
+        <div className='flex text-base'>
+             {teamDivs.flatMap( (div, idx) => idx === 0 ? [div] : [<p className="align-middle my-auto" key={`vs-${idx}`}>vs</p>, div])}
+        </div>
     </div>)
 }
 
@@ -66,7 +80,6 @@ export default function ReplaysVeiw():JSX.Element{
     //console.log(replays.data)
     return <>
     <div>
-        Replays
         <div className='mx-auto  text-xl'>
             <div>
                {replaysList}
