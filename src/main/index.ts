@@ -6,13 +6,16 @@ import Lobby from './Lobby'
 import ZerokConnection from './ZerokConnection'
 import ZerokLobbyInterface from './ZerokLobbyInterface'
 import { attachWindow } from './ipc_setup'
+import { ReplayManager } from './local/replays'
+import { ZkLauncher } from './local/zk_launcher'
 console.log('momo')
 
 // Create singleton instances
 const zkconnection = new ZerokConnection()
 export const lobby = new Lobby()
 export let lobbyInterface: ZerokLobbyInterface
-
+export const replayManager = new ReplayManager()
+export const zk_launcher = new ZkLauncher()
 let exist = false
 function createWindow(): void {
   // Create the browser window.

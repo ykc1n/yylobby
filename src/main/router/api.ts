@@ -4,6 +4,7 @@ import type { Context } from './context'
 import { on } from 'events'
 import  * as Commands from '../commands'
 import fs from 'node:fs'
+import path from 'node:path'
 // import { lobbyInterface } from '../index'
 const t = initTRPC.context<Context>().create({
   isServer: true
@@ -101,25 +102,38 @@ export const appRouter = t.router({
 
     }),
     getReplays:t.procedure
-    .query((opts)=>{
+    .query((async (opts)=>{
       console.log("helohelo")
-      let files = []
-      let basePath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos'
-      if(fs.existsSync('C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos')){
-        console.log("waiiiit")
-        const directory = fs.readdirSync(basePath)
-        files = directory.filter((filename)=>{
-          return fs.statSync(`${basePath}/${filename}`)
-        })
-        .sort((a,b)=>{
-          let astat = fs.statSync(`${basePath}/${a}`)
-          let bstat = fs.statSync(`${basePath}/${b}`)
-          return new Date(bstat.birthtime).getTime() - new Date(astat.birthtime).getTime()
-        })
-        console.log(files)
+      try{
+      const replays = await opts.ctx.replayManager.getCurrentPage()
+      
+      return {data:replays}}
+      catch(error){
+        console.error("Error in replays:", error)
+        throw error
       }
-      return {data:files.slice(0,10)}
+    })),
+    openReplay:t.procedure
+    .input(z.object({
+      filename:z.string()
+    }))
+    .mutation(async (opts)=>{
+      try {
+        const replayPath = opts.ctx.replayManager.baseReplayPath
+        console.log("testing waa - mutation called")
+        console.log("replayPath:", replayPath)
+        console.log("filename:", opts.input.filename)
+        const fullPath = path.join(replayPath, opts.input.filename)
+        console.log("fullPath:", fullPath)
+        
+        await opts.ctx.zk_launcher.start_replay(fullPath)
+        console.log("start_replay completed")
+      } catch (error) {
+        console.error("Error in openReplay:", error)
+        throw error
+      }
     })
+    
 
 })
 

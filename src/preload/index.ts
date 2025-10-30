@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI, exposeElectronAPI } from '@electron-toolkit/preload'
-import { exposeElectronTRPC } from '@janwirth/electron-trpc-link/main'
+import { exposeElectronTRPC } from 'electron-trpc-experimental/preload'
 // Custom APIs for renderer
 
 interface LoginData {

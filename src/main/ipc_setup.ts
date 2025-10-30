@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { createIPCHandler } from '@janwirth/electron-trpc-link/main'
+import { createIPCHandler } from 'electron-trpc-experimental/main'
 import { appRouter } from './router/api'
 import { createContext } from './router/context'
 import ZerokLobbyInterface from './ZerokLobbyInterface'
