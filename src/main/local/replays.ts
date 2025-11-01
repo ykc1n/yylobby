@@ -33,11 +33,11 @@ export class ReplayManager{
             return this.parsedReplays
         }
         const currentReplays = this.replays.slice(this.page, this.pageSize)
-        console.log(currentReplays)
+        //console.log(currentReplays)
         console.log(path.join(this.baseReplayPath,currentReplays[0]))
         const replayPaths = currentReplays
             .map( replay => path.join(this.baseReplayPath,replay))
-        console.log(replayPaths)
+        //console.log(replayPaths)
         
         // Parse replays with error handling for each one
         const parseResults = await Promise.allSettled(
@@ -58,7 +58,21 @@ export class ReplayManager{
                     })
                     const teamSizes = Array.from(teamCounts.values()).sort((a, b) => b - a)
                     const gameType = teamSizes.join('v')
-                    
+                    const teams = new Map()
+                    const winners = replay.statistics?.winningAllyTeamIds
+                    const players = replay.info.players
+                    players.forEach( player =>{
+                        if(!teams.has(player.allyTeamId)){
+                            teams.set(player.allyTeamId,[])
+                        
+                        }
+                        const team = teams.get(player.allyTeamId)
+                        team.push(player)
+                        teams.set(player.allyTeamId, team)
+
+
+                    })
+
                     return {
                         filename: currentReplays[index],
                         map: replay.info.meta.map,
@@ -67,7 +81,8 @@ export class ReplayManager{
                         duration: replay.info.meta.durationMs,
                         date: replay.info.meta.startTime,
                         players: replay.info.players,
-                        winners: replay.statistics?.winningAllyTeamIds
+                        winners: replay.statistics?.winningAllyTeamIds,
+                        teams: teams
                     }
                 } else {
                     console.error(`Failed to parse ${currentReplays[index]}:`, result.reason)

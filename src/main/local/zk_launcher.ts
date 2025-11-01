@@ -5,6 +5,12 @@ import {parse} from 'lua-json';
 import { spawn } from 'node:child_process';
 
 //this code is heavily inspired by the BAR debug launcher: https://github.com/beyond-all-reason/bar_debug_launcher
+
+
+/*
+TODO:
+ 
+*/ 
 export class ZkLauncher{
     basePath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/'
     baseEngineFolder = path.join(this.basePath, 'engine')
