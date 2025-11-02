@@ -12,6 +12,7 @@ TODO:
  
 */ 
 export class ZkLauncher{
+    currentGame: 'zerok' | 'bar' = 'zerok'
     basePath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/'
     baseEngineFolder = path.join(this.basePath, 'engine')
     platform = "win64"
@@ -20,6 +21,21 @@ export class ZkLauncher{
     maps = new Map()
     menus = new Map()
     games = new Map()
+
+    private gamePaths = {
+        zerok: 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/',
+        bar: 'C:/Program Files (x86)/Steam/steamapps/common/Beyond All Reason/data'
+    }
+
+    setGame(game: 'zerok' | 'bar'): void {
+        this.currentGame = game
+        this.basePath = this.gamePaths[game]
+        this.baseEngineFolder = path.join(this.basePath, 'engine')
+        this.engines.clear()
+        this.maps.clear()
+        this.menus.clear()
+        this.games.clear()
+    }
 
     findEngines():void{
         const enginesPath = path.join(this.baseEngineFolder,this.platform)
@@ -130,11 +146,14 @@ export class ZkLauncher{
             //new version check
             this.findEngines()
             let engine = ''
+            let enginefullpath = path.join(engine, this.engine_binary)
             if (version.startsWith('2') && (version.match(/\./g)?.length == 2)){
                 console.log(`clocked as new version ${version}`)
                 const subversions = version.split('.')
                 const releaseID = `rel${subversions[0].slice(2)}${subversions[1]}`
                 const enginedir = `${releaseID}.${version}`
+
+
                 console.log(enginedir)
                 console.log(this.engines)
 
@@ -145,9 +164,12 @@ export class ZkLauncher{
                     console.log("cant find engine")
                     return
                 }
-
-
+                if(this.currentGame=='bar')
+                    enginefullpath = path.join(engine,enginedir)
+                if(this.currentGame=='zerok')
+                    enginefullpath = path.join(engine,this.engine_binary)
                 
+  
             } else {
                 console.log("old version detected lol lemme implement that waa")
                 return
@@ -162,7 +184,7 @@ export class ZkLauncher{
             }
 
             
-            const enginefullpath = path.join(engine, this.engine_binary)
+            
             if(fs.existsSync(enginefullpath)){
                 console.log("does not exist")
                 return

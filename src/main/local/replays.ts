@@ -4,19 +4,38 @@ import path from 'node:path'
 import { DemoModel, DemoParser } from 'sdfz-demo-parser'
 export class ReplayManager{
     baseReplayPath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos'
-    replays:string[] = []
-    parsedReplays:DemoModel.Demo[]= []
+    currentGame: 'zerok' | 'bar' = 'zerok'
+    replaysMap:Map<string,string[]> = new Map()
+    CachedReplaysMap:Map<string,DemoModel.Demo[]> = new Map()
+
     page=0
     pageSize = 30
     parser = new DemoParser()
 
+    private replayPaths = {
+        zerok: 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos',
+        bar: 'C:\Program Files\Beyond-All-Reason\data\engine'
+    }
 
     constructor(){
+        this.loadReplays()
+    }
+
+    setGame(game: 'zerok' | 'bar'): void {
+        if (this.currentGame !== game) {
+            this.currentGame = game
+            this.baseReplayPath = this.replayPaths[game]
+            this.parsedReplays = []
+            this.loadReplays()
+        }
+    }
+
+    private loadReplays(): void {
         //initialize replays array
         if(fs.existsSync(this.baseReplayPath)){
         
         const directory = fs.readdirSync(this.baseReplayPath)
-        this.replays = directory.filter((filename)=>{
+        const replays  = directory.filter((filename)=>{
           return fs.statSync(`${this.baseReplayPath}/${filename}`)
         })
         .sort((a,b)=>{
@@ -24,15 +43,26 @@ export class ReplayManager{
           const bstat = fs.statSync(`${this.baseReplayPath}/${b}`)
           return new Date(bstat.birthtime).getTime() - new Date(astat.birthtime).getTime()
         })
-        
+        this.replaysMap.set(this.currentGame,replays)
+      } else{
+        console.log("DOES NOT EXIST LEL ")
+        console.log(this.baseReplayPath)
       }
+      
+
     }
     async getCurrentPage():Promise<object>{
-        if (this.parsedReplays.length > 0){
+        const cachedReplays =  this.CachedReplaysMap.get(this.currentGame)??[]
+        if (cachedReplays.length > 0){
             console.log("cached replays time!")
-            return this.parsedReplays
+            return cachedReplays
         }
-        const currentReplays = this.replays.slice(this.page, this.pageSize)
+        
+        if(this.replaysMap.get(this.currentGame))
+            this.loadReplays()
+        const replays = this.replaysMap.get(this.currentGame)
+        console.log(replays)
+        const currentReplays = replays.slice(this.page, this.pageSize)
         //console.log(currentReplays)
         console.log(path.join(this.baseReplayPath,currentReplays[0]))
         const replayPaths = currentReplays
@@ -91,7 +121,7 @@ export class ReplayManager{
             })
             .filter(item => item !== null)
         
-        this.parsedReplays = data
+        this.CachedReplaysMap.set(this.currentGame, data)
         return data
     }
     nextPage():void{

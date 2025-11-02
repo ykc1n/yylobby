@@ -1,6 +1,21 @@
 import { useState } from 'react'
 import {trpc} from '../utils/trpc'
 
+/*
+IDEA:
+build order tracker
+
+
+or like, demo db
+
+can save a demo in db
+add tags, name, and parse it
+can also simulate it, and store data, having it be more percise than gex 30sec increments
+can query demos based on map, name, tags, etc
+perfect for optimizers
+
+
+*/
 interface ReplayData {
     filename: string
     map: string
@@ -8,7 +23,7 @@ interface ReplayData {
     gameType: string
     duration: number
     date: Date
-    players: any[]
+    players: unknown[]
     winners?: number[]
     teams: Map<number,object[]>
 }
@@ -78,7 +93,8 @@ function SelectedReplay(props:{replayData:ReplayData, playReplay}){
     )
 }
 export default function ReplaysVeiw():JSX.Element{
-    const replayQuery = trpc.getReplays.useQuery()
+    const [selectedGame, setSelectedGame] = useState<'zerok' | 'bar'>('zerok')
+    const replayQuery = trpc.getReplays.useQuery({ game: selectedGame })
     const replayOpener = trpc.openReplay.useMutation()
     const replays = new Map()
     const [selectedReplay,setSelectedReplay] = useState("");
@@ -91,8 +107,22 @@ export default function ReplaysVeiw():JSX.Element{
     //console.log(replays.data)
     return <>
     <div>
-        <div className='mx-auto grid grid-cols-3 text-xl'>
-            <div className='col-span-2'>
+        <div className='flex gap-4 mb-4 p-4 bg-neutral-800'>
+            <button 
+                className={`px-4 py-2 rounded ${selectedGame === 'zerok' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                onClick={() => setSelectedGame('zerok')}
+            >
+                Zero-K
+            </button>
+            <button 
+                className={`px-4 py-2 rounded ${selectedGame === 'bar' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                onClick={() => setSelectedGame('bar')}
+            >
+                Beyond All Reason
+            </button>
+        </div>
+        <div className='mx-auto grid grid-cols-3 text-xl '>
+            <div className='col-span-2 overflow-auto'>
                {replays.values().toArray().map(replay =>{
                 let selected = false
                 console.log(replay.filename)
