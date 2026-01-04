@@ -46,7 +46,7 @@ function Replay(props:{
     console.log(teams)
 
     //console.log(teams.get(0))
-    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2  ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
+    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2 ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg min-w-0`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name} className="truncate">{player.name}</p>)}</div>))
     .toArray()
     console.log(teamDivs)
 
@@ -66,7 +66,7 @@ function Replay(props:{
 function SelectedReplay(props:{replayData:ReplayData, playReplay}){
     const teams = props.replayData.teams
     const winners = props.replayData.winners
-    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2  ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
+    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2 ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg min-w-0`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name} className="truncate">{player.name}</p>)}</div>))
     .toArray()
     const handlePlayReplay = ():void=>{
         props.playReplay.mutate({filename:props.replayData.filename})
@@ -106,36 +106,46 @@ export default function ReplaysVeiw():JSX.Element{
 
     //console.log(replays.data)
     return <>
-    <div>
-        <div className='flex gap-4 mb-4 p-4 bg-neutral-800'>
+    <div className="h-full flex flex-col overflow-hidden">
+        <div className='flex gap-4 p-4 bg-neutral-800'>
             <button 
-                className={`px-4 py-2 rounded ${selectedGame === 'zerok' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                className={`px-4 py-2 rounded transition-all ${selectedGame === 'zerok' ? 'bg-neutral-900 text-white border-2 border-neutral-600' : 'bg-neutral-800 text-neutral-400 border-2 border-neutral-700 hover:bg-neutral-700'}`}
                 onClick={() => setSelectedGame('zerok')}
             >
                 Zero-K
             </button>
             <button 
-                className={`px-4 py-2 rounded ${selectedGame === 'bar' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300'}`}
+                className={`px-4 py-2 rounded transition-all ${selectedGame === 'bar' ? 'bg-neutral-900 text-white border-2 border-neutral-600' : 'bg-neutral-800 text-neutral-400 border-2 border-neutral-700 hover:bg-neutral-700'}`}
                 onClick={() => setSelectedGame('bar')}
             >
                 Beyond All Reason
             </button>
         </div>
-        <div className='mx-auto grid grid-cols-3 text-xl '>
-            <div className='col-span-2 overflow-auto'>
-               {replays.values().toArray().map(replay =>{
-                let selected = false
-                console.log(replay.filename)
-                console.log(selectedReplay)
-                if(replay.fileName==selectedReplay){
-                    selected = true
-                    console.log("selected!!!!!!!!!")
-                }
-                return Replay({replaySelector:setSelectedReplay,replayData:replay ,selected:selected})
-               })}
-               {replayQuery.isSuccess ? <></> : <div>Processing Replays..</div> } 
+        <div className='flex-1 grid grid-cols-3 gap-4 text-xl overflow-hidden min-h-0 min-w-0'>
+            <div className='col-span-2 overflow-y-auto overflow-x-hidden min-w-0'>
+               {replayQuery.isSuccess ? (
+                   replays.values().toArray().map(replay =>{
+                    let selected = false
+                    console.log(replay.filename)
+                    console.log(selectedReplay)
+                    if(replay.fileName==selectedReplay){
+                        selected = true
+                        console.log("selected!!!!!!!!!")
+                    }
+                    return Replay({replaySelector:setSelectedReplay,replayData:replay ,selected:selected})
+                   })
+               ) : (
+                   <div className="flex flex-col items-center justify-center h-full">
+                       <div className="relative w-16 h-16 mb-4">
+                           <div className="absolute top-0 left-0 w-full h-full border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                       </div>
+                       <div className="text-xl text-neutral-400 animate-pulse">
+                           Processing Replays...
+                       </div>
+                   </div>
+               )}
             </div>
-            <div>
+            <div className="overflow-y-auto min-w-0">
                 {replays.has(selectedReplay)? SelectedReplay({replayData:replays.get(selectedReplay), playReplay:replayOpener}): <></>}
             </div>
             

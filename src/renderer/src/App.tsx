@@ -5,6 +5,7 @@ import { Login } from './components/login'
 import HomePage from './pages/homepage'
 import MultiplayerPage from './MultiplayerPage'
 import SingleplayerPage from './SingleplayerPage'
+import SettingsPage from './SettingsPage'
 import { LobbyStore, useLobby } from './lobbyClient'
 import BattleListGrid from './BattleListGrid'
 import BatteList from './BattleList' 
@@ -38,9 +39,9 @@ function App(): JSX.Element {
  const [page,setPage] = useState("SP");
   return (
     <>
-      <div className="min-h-[100vh] bg-neutral-800 bg-cover bg-center  bg-no-repeat font-[motiva-sans,sans-serif]  text-white">
-        <div className="  bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2  justify-between">
-          <div className="flex  ">
+      <div className="h-screen overflow-hidden bg-neutral-800 bg-cover bg-center bg-no-repeat font-[motiva-sans,sans-serif] text-white flex flex-col">
+        <div className="bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2 justify-between">
+          <div className="flex">
 
             
             <button className=" text-xl p-3 hover:text-white font-thin text-neutral-400 transition-all duration-300 hover:bg-black/20"
@@ -66,12 +67,15 @@ function App(): JSX.Element {
           </div>
 
           <div className="flex justify-self-end px-8">
-            <button className="font-chakra-petch text-xl font-thin text-neutral-400 font-semibold justify-self-end">
+            <button 
+              className="font-chakra-petch text-xl font-thin text-neutral-400 font-semibold justify-self-end hover:text-white transition-all duration-300"
+              onClick={() => setPage("SETTINGS")}
+            >
               Settings
             </button>
           </div>
         </div>
-        <div className="">
+        <div className="flex-1 overflow-hidden">
            {
            (()=>{
             switch(page){
@@ -81,6 +85,8 @@ function App(): JSX.Element {
                 return <SingleplayerPage/>
               case "HOME":
                 return <HomePage/>
+              case "SETTINGS":
+                return <SettingsPage/>
               default:
                 return <HomePage/>
             }

@@ -136,6 +136,47 @@ export const appRouter = t.router({
         console.error("Error in openReplay:", error)
         throw error
       }
+    }),
+
+    getSettings: t.procedure
+    .query((opts) => {
+      return {
+        zerokReplayPath: opts.ctx.settings.configs.ZeroKConfigs.ReplaysDirectory,
+        barReplayPath: opts.ctx.settings.configs.BeyondAllReasonConfigs.ReplaysDirectory
+      }
+    }),
+
+    updateSettings: t.procedure
+    .input(z.object({
+      zerokReplayPath: z.string(),
+      barReplayPath: z.string()
+    }))
+    .mutation((opts) => {
+      // Update settings object
+      opts.ctx.settings.configs.ZeroKConfigs.ReplaysDirectory = opts.input.zerokReplayPath
+      opts.ctx.settings.configs.BeyondAllReasonConfigs.ReplaysDirectory = opts.input.barReplayPath
+      opts.ctx.settings.saveConfigs()
+      
+      // Update replay manager paths
+      opts.ctx.replayManager.updateReplayPaths(
+        opts.input.zerokReplayPath,
+        opts.input.barReplayPath
+      )
+      return { success: true }
+    }),
+
+    selectDirectory: t.procedure
+    .mutation(async () => {
+      const { dialog, BrowserWindow } = await import('electron')
+      const result = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow()!, {
+        properties: ['openDirectory']
+      })
+      
+      if (result.canceled || result.filePaths.length === 0) {
+        return { canceled: true, path: '' }
+      }
+      
+      return { canceled: false, path: result.filePaths[0] }
     })
     
 

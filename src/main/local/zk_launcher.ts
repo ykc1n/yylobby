@@ -9,7 +9,8 @@ import { spawn } from 'node:child_process';
 
 /*
 TODO:
- 
+  add a profile system
+  
 */ 
 export class ZkLauncher{
     currentGame: 'zerok' | 'bar' = 'zerok'
@@ -24,7 +25,7 @@ export class ZkLauncher{
 
     private gamePaths = {
         zerok: 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/',
-        bar: 'C:/Program Files (x86)/Steam/steamapps/common/Beyond All Reason/data'
+        bar: 'C:/Program Files/Beyond-All-Reason/data'
     }
 
     setGame(game: 'zerok' | 'bar'): void {

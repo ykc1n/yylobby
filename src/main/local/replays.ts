@@ -14,7 +14,7 @@ export class ReplayManager{
 
     private replayPaths = {
         zerok: 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos',
-        bar: 'C:\Program Files\Beyond-All-Reason\data\engine'
+        bar: 'C:/Program Files/Beyond-All-Reason/data/demos'
     }
 
     constructor(){
@@ -28,6 +28,14 @@ export class ReplayManager{
             this.parsedReplays = []
             this.loadReplays()
         }
+    }
+
+    updateReplayPaths(zerokPath: string, barPath: string): void {
+        this.replayPaths.zerok = zerokPath
+        this.replayPaths.bar = barPath
+        this.baseReplayPath = this.replayPaths[this.currentGame]
+        this.parsedReplays = []
+        this.loadReplays()
     }
 
     private loadReplays(): void {
