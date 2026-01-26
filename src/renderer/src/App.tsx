@@ -38,7 +38,7 @@ function App(): JSX.Element {
  const [page,setPage] = useState("SP");
   return (
     <>
-      <div className="min-h-[100vh] bg-neutral-800 bg-cover bg-center  bg-no-repeat font-[motiva-sans,sans-serif]  text-white">
+      <div className="dark min-h-[100vh] bg-neutral-800 bg-cover bg-center  bg-no-repeat font-[motiva-sans,sans-serif]  text-white">
         <div className="  bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2  justify-between">
           <div className="flex  ">
 

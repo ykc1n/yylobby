@@ -102,9 +102,14 @@ export const appRouter = t.router({
 
     }),
     getReplays:t.procedure
+    .input(z.object({
+      game: z.enum(['zerok', 'bar'])
+    }))
     .query((async (opts)=>{
       console.log("helohelo")
       try{
+      opts.ctx.replayManager.setGame(opts.input.game)
+      opts.ctx.zk_launcher.setGame(opts.input.game)
       const replays = await opts.ctx.replayManager.getCurrentPage()
       
       return {data:replays}}

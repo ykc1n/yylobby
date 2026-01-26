@@ -27,6 +27,12 @@ export class ReplayManager{
         
       }
     }
+    
+    setGame(game: 'zerok' | 'bar'): void {
+        // Reset cached replays when switching games
+        this.parsedReplays = []
+        // Game-specific path will be set from settings
+    }
     async getCurrentPage():Promise<object>{
         if (this.parsedReplays.length > 0){
             console.log("cached replays time!")

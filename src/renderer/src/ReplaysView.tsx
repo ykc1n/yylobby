@@ -1,5 +1,12 @@
 import { useState } from 'react'
 import {trpc} from '../utils/trpc'
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+
+interface PlayerData {
+    name: string
+    [key: string]: unknown
+}
 
 interface ReplayData {
     filename: string
@@ -8,108 +15,165 @@ interface ReplayData {
     gameType: string
     duration: number
     date: Date
-    players: any[]
+    players: PlayerData[]
     winners?: number[]
-    teams: Map<number,object[]>
+    teams: Map<number, PlayerData[]>
 }
 
 function Replay(props:{
-    replaySelector: unknown
+    replaySelector: (filename: string) => void
     replayData: ReplayData
     selected: boolean
 }):JSX.Element{
   
     const map = props.replayData.map
     const date = props.replayData.date
-    const players = props.replayData.players
     const gameType = props.replayData.gameType
     const durationMinutes = Math.floor(props.replayData.duration / 60000)
     const winners = props.replayData.winners?.[0]
     const teams = props.replayData.teams
-    console.log("---------")
-    console.log(players)
-    console.log(teams)
 
-    //console.log(teams.get(0))
-    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2  ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
-    .toArray()
-    console.log(teamDivs)
+    const teamDivs = teams.keys().map(team=>(
+        <div className={`flex flex-col gap-1 ${team==winners? 'text-green-400' : 'text-red-400'}`} key={`${team}`}>
+            {teams.get(team)?.map(player => (
+                <p key={player.name} className="text-sm truncate">{player.name}</p>
+            ))}
+        </div>
+    )).toArray()
 
-    return (<div className={`px-4 py-2 ${props.selected? 'bg-neutral-500' : 'bg-neutral-900 hover:bg-neutral-800'} transition-all duration-300 m-1`}
-    onClick={(()=>{props.replaySelector(props.replayData.filename)})}>
-        <div className="font-semibold">{gameType} on {map}</div>
-        <div className="text-base text-neutral-500 ">
-            {date ? new Date(date).toLocaleString() : 'Unknown'} • {durationMinutes} min
-        </div>
-        <div className='flex text-base'>
-             {teamDivs.flatMap( (div, idx) => idx === 0 ? [div] : [<p className="align-middle my-auto" key={`vs-${idx}`}>vs</p>, div])}
-        </div>
-    </div>)
+    return (
+        <Card 
+            className={`cursor-pointer transition-all hover:border-neutral-600 ${props.selected ? 'border-neutral-500 bg-neutral-800' : 'border-neutral-800 bg-neutral-900/50'}`}
+            onClick={() => props.replaySelector(props.replayData.filename)}
+        >
+            <CardContent className="p-4">
+                <div className="font-semibold text-base mb-1">{gameType} • {map}</div>
+                <div className="text-sm text-muted-foreground mb-3">
+                    {date ? new Date(date).toLocaleDateString() : 'Unknown'} • {durationMinutes} min
+                </div>
+                <div className='flex gap-3 text-sm'>
+                    {teamDivs.flatMap((div, idx) => idx === 0 ? [div] : [
+                        <span key={`vs-${idx}`} className="text-muted-foreground self-center">vs</span>, 
+                        div
+                    ])}
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 
-function SelectedReplay(props:{replayData:ReplayData, playReplay}){
+function SelectedReplay(props:{replayData:ReplayData, playReplay: ReturnType<typeof trpc.openReplay.useMutation>}):JSX.Element{
     const teams = props.replayData.teams
-    const winners = props.replayData.winners
-    const teamDivs = teams.keys().map(team=>(<div className={`mx-2 p-2  ${team==winners? 'text-green-500' : 'text-red-500'} rounded-lg`} key={`${team}`}>{teams.get(team).map(player => <p key={player.name}>{player.name}</p>)}</div>))
-    .toArray()
+    const winners = props.replayData.winners?.[0]
+    const durationMinutes = Math.floor(props.replayData.duration / 60000)
+    
+    const teamDivs = teams.keys().map(team=>(
+        <div className={`flex flex-col gap-1 p-3 rounded-lg border ${team==winners? 'text-green-400 border-green-900/50 bg-green-950/20' : 'text-red-400 border-red-900/50 bg-red-950/20'}`} key={`${team}`}>
+            {teams.get(team)?.map(player => (
+                <p key={player.name} className="text-sm truncate">{player.name}</p>
+            ))}
+        </div>
+    )).toArray()
+    
     const handlePlayReplay = ():void=>{
         props.playReplay.mutate({filename:props.replayData.filename})
     }
+    
     return (
-        <div>
-            <div className='font-semibold text-center'>
-                {props.replayData.gameType} on {props.replayData.map}
-
-            </div>        
-            <div className='flex text-base justify-center'>
-             {teamDivs.flatMap( (div, idx) => idx === 0 ? [div] : [<p className="align-middle my-auto" key={`vs-${idx}`}>vs</p>, div])}
-        </div>
-
-            <div className='text-sm text-neutral-500'>
-                 {props.replayData.filename}
-            </div>
-            <div className='bg-neutral-900 text-center text-2xl flex justify-center hover:bg-neutral-700 transtion-all duration-300'
-            onClick={handlePlayReplay}>
-                Play Replay
-            </div>
-
-        </div>
+        <Card className="border-neutral-800 bg-neutral-900/50">
+            <CardHeader>
+                <CardTitle className="text-xl">{props.replayData.gameType} on {props.replayData.map}</CardTitle>
+                <div className="text-sm text-muted-foreground">
+                    {props.replayData.date ? new Date(props.replayData.date).toLocaleString() : 'Unknown'} • {durationMinutes} min
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className='flex gap-3 justify-center'>
+                    {teamDivs.flatMap((div, idx) => idx === 0 ? [div] : [
+                        <span key={`vs-${idx}`} className="text-muted-foreground self-center font-semibold">VS</span>, 
+                        div
+                    ])}
+                </div>
+                
+                <div className='text-xs text-muted-foreground font-mono truncate'>
+                    {props.replayData.filename}
+                </div>
+                
+                <Button 
+                    onClick={handlePlayReplay}
+                    className="w-full"
+                    size="lg"
+                >
+                    Play Replay
+                </Button>
+            </CardContent>
+        </Card>
     )
 }
+
 export default function ReplaysVeiw():JSX.Element{
-    const replayQuery = trpc.getReplays.useQuery()
+    const [selectedGame, setSelectedGame] = useState<'zerok' | 'bar'>('zerok')
+    const replayQuery = trpc.getReplays.useQuery({ game: selectedGame })
     const replayOpener = trpc.openReplay.useMutation()
-    const replays = new Map()
+    const replays = new Map<string, ReplayData>()
     const [selectedReplay,setSelectedReplay] = useState("");
-    console.log(selectedReplay)
     
-    if(replayQuery.isSuccess)
-        replayQuery.data.data.forEach(replay => replays.set(replay.filename, replay));
+    if(replayQuery.isSuccess && Array.isArray(replayQuery.data.data)){
+        replayQuery.data.data.forEach((replay: ReplayData) => replays.set(replay.filename, replay));
+    }
     
 
-    //console.log(replays.data)
-    return <>
-    <div>
-        <div className='mx-auto grid grid-cols-3 text-xl'>
-            <div className='col-span-2'>
-               {replays.values().toArray().map(replay =>{
-                let selected = false
-                console.log(replay.filename)
-                console.log(selectedReplay)
-                if(replay.fileName==selectedReplay){
-                    selected = true
-                    console.log("selected!!!!!!!!!")
-                }
-                return Replay({replaySelector:setSelectedReplay,replayData:replay ,selected:selected})
-               })}
-               {replayQuery.isSuccess ? <></> : <div>Processing Replays..</div> } 
-            </div>
-            <div>
-                {replays.has(selectedReplay)? SelectedReplay({replayData:replays.get(selectedReplay), playReplay:replayOpener}): <></>}
+    return (
+        <div className="h-full flex flex-col overflow-hidden bg-background">
+            <div className='flex gap-2 p-4 border-b border-border'>
+                <Button 
+                    variant={selectedGame === 'zerok' ? 'default' : 'outline'}
+                    onClick={() => setSelectedGame('zerok')}
+                >
+                    Zero-K
+                </Button>
+                <Button 
+                    variant={selectedGame === 'bar' ? 'default' : 'outline'}
+                    onClick={() => setSelectedGame('bar')}
+                >
+                    Beyond All Reason
+                </Button>
             </div>
             
+            <div className='flex-1 grid grid-cols-3 gap-4 p-4 overflow-hidden min-h-0 min-w-0'>
+                <div className='col-span-2 overflow-y-auto overflow-x-hidden min-w-0 space-y-2'>
+                   {replayQuery.isSuccess ? (
+                       replays.values().toArray().map(replay => {
+                        const selected = replay.filename === selectedReplay
+                        return <Replay 
+                            key={replay.filename}
+                            replaySelector={setSelectedReplay}
+                            replayData={replay}
+                            selected={selected}
+                        />
+                       })
+                   ) : (
+                       <div className="flex flex-col items-center justify-center h-full">
+                           <div className="relative w-16 h-16 mb-4">
+                               <div className="absolute top-0 left-0 w-full h-full border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                           </div>
+                           <div className="text-xl text-muted-foreground animate-pulse">
+                               Processing Replays...
+                           </div>
+                       </div>
+                   )}
+                </div>
+                
+                <div className="overflow-y-auto min-w-0">
+                    {selectedReplay && replays.has(selectedReplay) && (
+                        <SelectedReplay 
+                            replayData={replays.get(selectedReplay)!} 
+                            playReplay={replayOpener}
+                        />
+                    )}
+                </div>
+            </div>
         </div>
-    </div>
-    </>
+    )
 }
