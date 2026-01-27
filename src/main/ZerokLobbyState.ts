@@ -1,5 +1,7 @@
 import { EventEmitter } from 'events'
-import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate } from './types/AppState'
+import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate, ChatMessage } from './types/AppState'
+
+const MAX_MESSAGES_PER_CHANNEL = 200
 
 export class ZerokLobbyState extends EventEmitter {
   private state: AppState
@@ -27,6 +29,7 @@ export class ZerokLobbyState extends EventEmitter {
         welcomeMessage: null
       },
       channels: {},
+      activeChannel: null,
       battles: [],
       lastUpdated: Date.now()
     }
@@ -70,10 +73,16 @@ export class ZerokLobbyState extends EventEmitter {
     this.emitStateChange()
   }
 
-  setChannel(name: string, data: ChannelData): void {
+  setChannel(name: string, data: Omit<ChannelData, 'messages'>): void {
+    const existingMessages = this.state.channels[name]?.messages ?? []
     this.state = {
       ...this.state,
-      channels: { ...this.state.channels, [name]: data },
+      channels: {
+        ...this.state.channels,
+        [name]: { ...data, messages: existingMessages }
+      },
+      // Set as active channel if it's the first one
+      activeChannel: this.state.activeChannel ?? name,
       lastUpdated: Date.now()
     }
     this.emitStateChange()
@@ -81,9 +90,50 @@ export class ZerokLobbyState extends EventEmitter {
 
   removeChannel(name: string): void {
     const { [name]: _, ...rest } = this.state.channels
+    const channelNames = Object.keys(rest)
     this.state = {
       ...this.state,
       channels: rest,
+      // If we removed the active channel, switch to another one
+      activeChannel: this.state.activeChannel === name
+        ? (channelNames[0] ?? null)
+        : this.state.activeChannel,
+      lastUpdated: Date.now()
+    }
+    this.emitStateChange()
+  }
+
+  setActiveChannel(name: string): void {
+    if (this.state.channels[name]) {
+      this.state = {
+        ...this.state,
+        activeChannel: name,
+        lastUpdated: Date.now()
+      }
+      this.emitStateChange()
+    }
+  }
+
+  addMessage(message: ChatMessage): void {
+    const channelName = message.target
+    const channel = this.state.channels[channelName]
+    if (!channel) {
+      console.log(`[LobbyState] Message for unknown channel: ${channelName}`)
+      return
+    }
+
+    // Add message and trim to max size
+    const messages = [...channel.messages, message]
+    if (messages.length > MAX_MESSAGES_PER_CHANNEL) {
+      messages.splice(0, messages.length - MAX_MESSAGES_PER_CHANNEL)
+    }
+
+    this.state = {
+      ...this.state,
+      channels: {
+        ...this.state.channels,
+        [channelName]: { ...channel, messages }
+      },
       lastUpdated: Date.now()
     }
     this.emitStateChange()

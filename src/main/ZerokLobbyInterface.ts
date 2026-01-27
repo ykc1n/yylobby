@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import type ZerokConnection from './ZerokConnection'
 import type { ZerokLobbyState } from './ZerokLobbyState'
+import { ChatPlace } from './types/AppState'
 
 interface LoginResponse {
   ResultCode: number
@@ -21,6 +22,16 @@ interface JoinChannelData {
     Users?: string[]
     IsDeluge?: boolean
   }
+}
+
+interface SayData {
+  User: string
+  Text: string
+  Time: string
+  Target: string
+  Place: number
+  IsEmote: boolean
+  Ring?: boolean
 }
 
 /**
@@ -88,9 +99,15 @@ export default class ZerokLobbyInterface {
       case 'RegisterResponse':
         this.handleRegisterResponse(data)
         break
+      case 'Say':
+        this.handleSay(data as SayData)
+        break
       // Add more command handlers as needed
       default:
-        console.log(`[LobbyInterface] Unhandled command: ${name}`)
+        // Silently ignore common noisy commands
+        if (!['User', 'BattleAdded', 'BattleUpdate', 'ChannelUserAdded', 'ChannelUserRemoved', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {
+          console.log(`[LobbyInterface] Unhandled command: ${name}`)
+        }
     }
   }
 
@@ -140,6 +157,23 @@ export default class ZerokLobbyInterface {
     // Handle registration response if needed
   }
 
+  private handleSay(data: SayData): void {
+    // Only handle channel messages for now
+    if (data.Place !== ChatPlace.Channel) {
+      return
+    }
+
+    this.lobbyState.addMessage({
+      id: `${data.Time}-${data.User}-${Math.random().toString(36).slice(2, 8)}`,
+      user: data.User,
+      text: data.Text,
+      time: data.Time,
+      target: data.Target,
+      place: data.Place as ChatPlace,
+      isEmote: data.IsEmote
+    })
+  }
+
   // Public actions
 
   connect(): void {
@@ -185,5 +219,18 @@ export default class ZerokLobbyInterface {
 
   joinChannel(channelName: string, password = ''): void {
     this.connection.send('JoinChannel', { ChannelName: channelName, Password: password })
+  }
+
+  sendMessage(target: string, text: string, place: ChatPlace = ChatPlace.Channel): void {
+    this.connection.send('Say', {
+      Place: place,
+      Target: target,
+      Text: text,
+      IsEmote: false
+    })
+  }
+
+  setActiveChannel(channelName: string): void {
+    this.lobbyState.setActiveChannel(channelName)
   }
 }

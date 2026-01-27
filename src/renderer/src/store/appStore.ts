@@ -3,11 +3,31 @@ import { create } from 'zustand'
 // Mirror the types from main process
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
+export enum ChatPlace {
+  Channel = 0,
+  Battle = 1,
+  BattlePrivate = 2,
+  MessageBox = 3,
+  User = 4,
+  Server = 5
+}
+
+export interface ChatMessage {
+  id: string
+  user: string
+  text: string
+  time: string
+  target: string
+  place: ChatPlace
+  isEmote: boolean
+}
+
 export interface ChannelData {
   name: string
   topic: string | null
   users: string[]
   isDeluge: boolean
+  messages: ChatMessage[]
 }
 
 export interface BattleData {
@@ -40,6 +60,7 @@ export interface AppState {
     welcomeMessage: string | null
   }
   channels: Record<string, ChannelData>
+  activeChannel: string | null
   battles: BattleData[]
   lastUpdated: number
 }
@@ -66,6 +87,7 @@ const initialState: AppState = {
     welcomeMessage: null
   },
   channels: {},
+  activeChannel: null,
   battles: [],
   lastUpdated: 0
 }
@@ -93,3 +115,14 @@ export const useUserCount = (): number => useAppStore((state) => state.lobby.use
 export const useChannels = () => useAppStore((state) => state.channels)
 
 export const useBattles = () => useAppStore((state) => state.battles)
+
+export const useActiveChannel = (): string | null =>
+  useAppStore((state) => state.activeChannel)
+
+export const useActiveChannelData = (): ChannelData | null =>
+  useAppStore((state) =>
+    state.activeChannel ? state.channels[state.activeChannel] ?? null : null
+  )
+
+export const useChannelMessages = (channelName: string): ChatMessage[] =>
+  useAppStore((state) => state.channels[channelName]?.messages ?? [])

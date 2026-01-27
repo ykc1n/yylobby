@@ -55,6 +55,20 @@ export const appRouter = t.router({
       return { success: true }
     }),
 
+  sendMessage: t.procedure
+    .input(z.object({ target: z.string(), text: z.string() }))
+    .mutation((opts) => {
+      opts.ctx.lobbyInterface.sendMessage(opts.input.target, opts.input.text)
+      return { success: true }
+    }),
+
+  setActiveChannel: t.procedure
+    .input(z.object({ channelName: z.string() }))
+    .mutation((opts) => {
+      opts.ctx.lobbyInterface.setActiveChannel(opts.input.channelName)
+      return { success: true }
+    }),
+
   // Replay endpoints (unchanged)
   getReplays: t.procedure
     .input(z.object({ game: z.enum(['zerok', 'bar']) }))

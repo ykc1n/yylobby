@@ -1,39 +1,39 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useThemeStore, themeColors } from './themeStore'
+import { useChannels, useActiveChannel, useActiveChannelData } from './store/appStore'
+import { useActions } from './hooks/useActions'
 
-interface ChatMessage {
-  id: number
-  user: string
-  message: string
-  timestamp: string
-  isSystem?: boolean
+function formatTime(isoString: string): string {
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
 }
 
-const MOCK_MESSAGES: ChatMessage[] = [
-  { id: 1, user: 'System', message: 'Welcome to the Zero-K lobby chat!', timestamp: '12:00', isSystem: true },
-  { id: 2, user: 'Commander_Alpha', message: 'Anyone up for a 2v2?', timestamp: '12:05' },
-  { id: 3, user: 'IronForge', message: 'Sure, I\'m in. What map?', timestamp: '12:06' },
-  { id: 4, user: 'Commander_Alpha', message: 'Speed Metal sounds good', timestamp: '12:06' },
-  { id: 5, user: 'NovaPilot', message: 'Can I join? Still learning the game', timestamp: '12:08' },
-  { id: 6, user: 'IronForge', message: 'Of course! We all started somewhere', timestamp: '12:09' },
-]
-
 export default function Chat(): JSX.Element {
-  const [messages] = useState<ChatMessage[]>(MOCK_MESSAGES)
   const [inputValue, setInputValue] = useState('')
-  const [activeChannel, setActiveChannel] = useState('general')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
 
-  const channels = [
-    { id: 'general', name: 'General', unread: 0 },
-    { id: 'looking-for-game', name: 'LFG', unread: 3 },
-    { id: 'help', name: 'Help', unread: 0 },
-  ]
+  const channels = useChannels()
+  const activeChannel = useActiveChannel()
+  const activeChannelData = useActiveChannelData()
+  const { sendMessage, setActiveChannel } = useActions()
+
+  const channelList = Object.values(channels)
+  const messages = activeChannelData?.messages ?? []
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages.length])
 
   const handleSend = (): void => {
-    if (inputValue.trim()) {
-      // Would send message here
+    if (inputValue.trim() && activeChannel) {
+      sendMessage(activeChannel, inputValue.trim())
       setInputValue('')
     }
   }
@@ -53,52 +53,60 @@ export default function Chat(): JSX.Element {
           <h2 className="text-sm font-medium text-white uppercase tracking-wider">Chat</h2>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs text-neutral-500">128 online</span>
+            <span className="text-xs text-neutral-500">
+              {activeChannelData?.users.length ?? 0} in channel
+            </span>
           </div>
         </div>
 
         {/* Channel Tabs */}
-        <div className="flex gap-1">
-          {channels.map(channel => (
-            <button
-              key={channel.id}
-              onClick={() => setActiveChannel(channel.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200
-                ${activeChannel === channel.id
-                  ? `${theme.bgSubtle} ${theme.text}`
-                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
-                }`}
-            >
-              {channel.name}
-              {channel.unread > 0 && (
-                <span className={`ml-1.5 px-1.5 py-0.5 text-[10px] ${theme.bg} text-white rounded-full`}>
-                  {channel.unread}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="flex gap-1 overflow-x-auto">
+          {channelList.length === 0 ? (
+            <span className="text-xs text-neutral-600 italic">No channels joined</span>
+          ) : (
+            channelList.map(channel => (
+              <button
+                key={channel.name}
+                onClick={() => setActiveChannel(channel.name)}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200 whitespace-nowrap
+                  ${activeChannel === channel.name
+                    ? `${theme.bgSubtle} ${theme.text}`
+                    : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                  }`}
+              >
+                #{channel.name}
+              </button>
+            ))
+          )}
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map(msg => (
-          <div key={msg.id} className={msg.isSystem ? 'text-center' : ''}>
-            {msg.isSystem ? (
-              <span className="text-xs text-neutral-600 italic">{msg.message}</span>
-            ) : (
+        {messages.length === 0 ? (
+          <div className="text-center text-neutral-600 text-sm italic py-8">
+            {activeChannel ? 'No messages yet' : 'Join a channel to start chatting'}
+          </div>
+        ) : (
+          messages.map(msg => (
+            <div key={msg.id} className={msg.isEmote ? 'italic' : ''}>
               <div className="group">
                 <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className={`text-sm font-medium ${theme.text}`}>{msg.user}</span>
+                  <span className={`text-sm font-medium ${theme.text}`}>
+                    {msg.isEmote ? '* ' : ''}{msg.user}
+                  </span>
                   <span className="text-[10px] text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {msg.timestamp}
+                    {formatTime(msg.time)}
                   </span>
                 </div>
-                <p className="text-sm text-neutral-300 leading-relaxed">{msg.message}</p>
+                <p className="text-sm text-neutral-300 leading-relaxed">
+                  {msg.isEmote ? msg.text : msg.text}
+                </p>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -109,14 +117,15 @@ export default function Chat(): JSX.Element {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none transition-colors"
+            placeholder={activeChannel ? `Message #${activeChannel}...` : 'Join a channel to chat'}
+            disabled={!activeChannel}
+            className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onFocus={(e) => e.currentTarget.style.borderColor = `rgba(${theme.rgb}, 0.4)`}
             onBlur={(e) => e.currentTarget.style.borderColor = ''}
           />
           <button
             onClick={handleSend}
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || !activeChannel}
             className={`px-4 py-2 ${theme.bg} ${theme.bgHover} disabled:bg-neutral-800 disabled:text-neutral-600 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:cursor-not-allowed`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

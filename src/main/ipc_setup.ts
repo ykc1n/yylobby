@@ -2,7 +2,6 @@ import { BrowserWindow } from 'electron'
 import { createIPCHandler } from 'electron-trpc-experimental/main'
 import { appRouter } from './router/api'
 import { createContext } from './router/context'
-import ZerokLobbyInterface from './ZerokLobbyInterface'
 let ipcHandler: ReturnType<typeof createIPCHandler> | undefined
 
 export function attachWindow(window: BrowserWindow): void {

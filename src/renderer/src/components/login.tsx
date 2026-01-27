@@ -8,10 +8,20 @@ export function Login(): JSX.Element {
     password: '123'
   })
 
-  const { login, isLoggingIn } = useActions()
+  const { login, isLoggingIn, joinChannel } = useActions()
   const auth = useAuth()
 
-  console.log('rerender?')
+  const handleLogin = async (): Promise<void> => {
+    try {
+      const result = await login(inputRef.current.username, inputRef.current.password)
+      // Auto-join the main chat channel after successful login
+      if (result.ResultCode === 0) {
+        joinChannel('#zk')
+      }
+    } catch (error) {
+      console.error('Login failed:', error)
+    }
+  }
 
   return (
     <div className="rounded bg-neutral-950/50 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] backdrop-blur-xl text-neutral-200 font-chakra-petch w-[fit-content] p-2">
@@ -44,10 +54,7 @@ export function Login(): JSX.Element {
         <button
           disabled={isLoggingIn}
           className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] transition-color duration-300 p-2 px-4 font-light hover:bg-white/5 rounded m-1 disabled:opacity-50"
-          onClick={() => {
-            console.log('login clicked')
-            login(inputRef.current.username, inputRef.current.password)
-          }}
+          onClick={handleLogin}
         >
           {isLoggingIn ? 'Logging in...' : 'Login'}
         </button>
