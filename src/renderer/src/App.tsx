@@ -1,95 +1,135 @@
-//import Versions from './components/Versions'
-//import electronLogo from './assets/electron.svg'
-import { useState, useEffect } from 'react'
-import { Login } from './components/login'
+import { HashRouter, Routes, Route, NavLink } from 'react-router-dom'
 import HomePage from './pages/homepage'
 import MultiplayerPage from './MultiplayerPage'
 import SingleplayerPage from './SingleplayerPage'
-import { LobbyStore, useLobby } from './lobbyClient'
-import BattleListGrid from './BattleListGrid'
-import BatteList from './BattleList' 
-import Chat from './Chat'
+import SettingsPage from './pages/SettingsPage'
+import { useThemeStore, themeColors } from './themeStore'
+import { useStateSync } from './hooks/useStateSync'
+import { useConnectionStatus } from './store/appStore'
+import { useActions } from './hooks/useActions'
+
 console.log('App loaded!')
 
+function ConnectionIndicator(): JSX.Element {
+  const status = useConnectionStatus()
+  const { connect, isConnecting } = useActions()
+  const themeColor = useThemeStore((state) => state.themeColor)
 
-function Welcome(): JSX.Element {
-  //const data = JSON.pars
-  const lobby = LobbyStore(state=>state)
-  // const engine = useLobby((state)=>state.Engine)
-  // const game = useLobby((state)=>state.Game)
-  // const userCount = useLobby((state)=>state.UserCount)
+  const isOnline = status === 'connected'
+  const isConnectingState = status === 'connecting' || isConnecting
 
   return (
-    <>
-      {/* <div className="text-2xl">Welcome!</div> */}
-      <div className="flex text-white gap-8">
-        <div>{lobby.Engine}</div>
-
-        <div>{lobby.Game}</div>
-
-        <div>Users Online: {lobby.UserCount}</div>
-      </div>
-    </>
+    <button
+      onClick={() => status === 'disconnected' && connect()}
+      disabled={isConnectingState}
+      className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all duration-200 ${
+        isOnline
+          ? 'cursor-default'
+          : isConnectingState
+            ? 'cursor-wait'
+            : 'hover:bg-white/5 cursor-pointer'
+      }`}
+      title={
+        isOnline
+          ? 'Connected to server'
+          : isConnectingState
+            ? 'Connecting...'
+            : 'Click to connect'
+      }
+    >
+      <span
+        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+          isOnline
+            ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'
+            : isConnectingState
+              ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)] animate-pulse'
+              : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+        }`}
+      />
+      <span
+        className={`text-xs font-medium uppercase tracking-wider ${
+          isOnline
+            ? 'text-green-400'
+            : isConnectingState
+              ? 'text-yellow-400'
+              : 'text-red-400'
+        }`}
+      >
+        {isOnline ? 'Online' : isConnectingState ? 'Connecting' : 'Offline'}
+      </span>
+    </button>
   )
 }
 
 function App(): JSX.Element {
- useLobby()
- const [page,setPage] = useState("SP");
+  // Initialize state sync ONCE at root level
+  useStateSync()
+
+  const themeColor = useThemeStore((state) => state.themeColor)
+  const theme = themeColors[themeColor]
+
+  const navLinkClass = ({ isActive }: { isActive: boolean }): string => {
+    if (isActive) {
+      return `relative px-5 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 ${theme.text} bg-${themeColor}-400/5 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent`
+    }
+    return 'relative px-5 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+  }
+
   return (
-    <>
-      <div className="dark min-h-[100vh] bg-neutral-800 bg-cover bg-center  bg-no-repeat font-[motiva-sans,sans-serif]  text-white">
-        <div className="  bg-neutral-950/70 bg-[url(./ophex.svg)] backdrop-blur-xl grid grid-cols-2  justify-between">
-          <div className="flex  ">
-
-            
-            <button className=" text-xl p-3 hover:text-white font-thin text-neutral-400 transition-all duration-300 hover:bg-black/20"
-            onClick={()=>{setPage("HOME")}}>
-              Home
-            </button>
-
-            <button 
-            onClick={()=>{setPage("SP")}}
-            className=" shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.03)] hover:shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.1)]  text-xl font-regular text-neutral-400  border-neutral-400 p-1 transition-all duration-300 hover:text-white">
-              {' '}
-              Singleplayer{' '}
-            </button>
-
-            <button className=" shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.03)] hover:shadow-[inset_0px_0px_30px_0px_rgba(255,255,255,.1)] text-xl font-thin text-neutral-400  border-neutral-400 p-3 transition-all duration-300 hover:text-white"
-            onClick={()=>{setPage("MP")}}
+    <HashRouter>
+      <div className="dark min-h-[100vh] bg-neutral-900 bg-cover bg-center bg-no-repeat font-[motiva-sans,sans-serif] text-white">
+        <style>{`
+          .nav-glow::after {
+            box-shadow: 0 0 8px rgba(${theme.rgb}, 0.5);
+          }
+        `}</style>
+        <div className="bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-800/50 flex items-center justify-between">
+          <div className="flex">
+            <NavLink
+              to="/"
+              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
             >
-              {' '}
-              Multiplayer{' '}
-            </button>
-
-
+              Home
+            </NavLink>
+            <NavLink
+              to="/Singleplayer"
+              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
+            >
+              Singleplayer
+            </NavLink>
+            <NavLink
+              to="/Multiplayer"
+              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
+            >
+              Multiplayer
+            </NavLink>
           </div>
 
-          <div className="flex justify-self-end px-8">
-            <button className="font-chakra-petch text-xl font-thin text-neutral-400 font-semibold justify-self-end">
+          <div className="flex items-center gap-2 px-4">
+            <ConnectionIndicator />
+            <div className="w-px h-6 bg-neutral-700/50" />
+            <NavLink
+              to="/Settings"
+              className={({ isActive }) =>
+                `px-4 py-2 text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-white/5 rounded
+                ${isActive ? theme.text : 'text-neutral-500 hover:text-neutral-300'}`
+              }
+            >
               Settings
-            </button>
+            </NavLink>
           </div>
         </div>
         <div className="">
-           {
-           (()=>{
-            switch(page){
-              case "MP":
-                return <MultiplayerPage/>
-              case "SP":
-                return <SingleplayerPage/>
-              case "HOME":
-                return <HomePage/>
-              default:
-                return <HomePage/>
-            }
-           })()
-            
-           }
+          <Routes>
+            <Route path="/Multiplayer" element={<MultiplayerPage />} />
+            <Route path="/Singleplayer/*" element={<SingleplayerPage />} />
+            <Route path="/Settings" element={<SettingsPage />} />
+            <Route path="/" element={<HomePage />} />
+          </Routes>
         </div>
       </div>
-    </>
+    </HashRouter>
   )
 }
+
 export default App

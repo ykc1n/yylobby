@@ -1,27 +1,23 @@
 import { useRef } from 'react'
-import { trpc } from '../../utils/trpc'
-import { LobbyStore } from '@renderer/lobbyClient'
+import { useAuth } from '../store/appStore'
+import { useActions } from '../hooks/useActions'
+
 export function Login(): JSX.Element {
   const inputRef = useRef({
     username: 'testbot12345',
     password: '123'
   })
 
-
-
-  const login = trpc.login.useMutation()
-  const register = trpc.register.useMutation()
-  const lobby = LobbyStore((state) => state)
+  const { login, isLoggingIn } = useActions()
+  const auth = useAuth()
 
   console.log('rerender?')
 
   return (
-    
-    <div className=" rounded bg-neutral-950/50 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] backdrop-blur-xl text-neutral-200 font-chakra-petch w-[fit-content] p-2">
+    <div className="rounded bg-neutral-950/50 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] backdrop-blur-xl text-neutral-200 font-chakra-petch w-[fit-content] p-2">
       <p className="rounded text-neutral-200 font-chakra-petch text-2xl text-center font-thin">
         Login
       </p>
-{/* {welcome.data?.length ? JSON.parse(welcome.data).Engine : "test" } */}
 
       <p>Username</p>
       <input
@@ -36,7 +32,8 @@ export function Login(): JSX.Element {
         <p>Password</p>
         <input
           name="password"
-          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] rounded transition-color duration-300 hover:bg-white/5 m-2 p-1 px-2 "
+          type="password"
+          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] rounded transition-color duration-300 hover:bg-white/5 m-2 p-1 px-2"
           onChange={(e) => {
             inputRef.current.password = e.target.value
           }}
@@ -45,34 +42,20 @@ export function Login(): JSX.Element {
       </div>
       <div className="flex justify-center my-2">
         <button
-          //type="submit"
-          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] transition-color duration-300 p-2 px-4 font-light hover:bg-white/5 p-1 px-2 rounded m-1"
+          disabled={isLoggingIn}
+          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] transition-color duration-300 p-2 px-4 font-light hover:bg-white/5 rounded m-1 disabled:opacity-50"
           onClick={() => {
-            console.log("test")
-            login.mutate(inputRef.current)
-            //getMatchMakerSetup.mutate()
+            console.log('login clicked')
+            login(inputRef.current.username, inputRef.current.password)
           }}
         >
-          Login
-        </button>
-
-        <button
-          //type="submit"
-          className="bg-white/1 shadow-[inset_0px_0px_40px_0px_rgba(255,255,255,.05)] p-2 px-4 transition-color duration-300 font-light hover:bg-white/5 p-1 px-2 rounded m-1"
-          onClick={() => {
-            register.mutate(inputRef.current)
-          }}
-        >
-          Register
+          {isLoggingIn ? 'Logging in...' : 'Login'}
         </button>
       </div>
       <div className="flex justify-center">
-        {/* {loginResult.isSuccess ? parseResultCode(loginResult.data) : ' '} */}
+        {auth.loggedIn && <span className="text-green-400">Logged in as {auth.username}</span>}
       </div>
-      <div>
-       {lobby.LoginStatusMessage}
-        {/* {getMatchMakerSetup.isSuccess ? ' W' : ' Loading...'} */}
-      </div>
+      <div>{auth.loginMessage}</div>
     </div>
   )
 }
