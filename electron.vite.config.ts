@@ -8,6 +8,14 @@ export default defineConfig({
   preload: {
   },
   renderer: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          debug: resolve('src/renderer/debug.html')
+        }
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),

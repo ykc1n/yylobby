@@ -63,6 +63,7 @@ export interface AppState {
   activeChannel: string | null
   battles: BattleData[]
   lastUpdated: number
+  users: Map<string, unknown>
 }
 
 interface AppStore extends AppState {
@@ -89,7 +90,8 @@ const initialState: AppState = {
   channels: {},
   activeChannel: null,
   battles: [],
-  lastUpdated: 0
+  lastUpdated: 0,
+  users: new Map()
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -115,6 +117,8 @@ export const useUserCount = (): number => useAppStore((state) => state.lobby.use
 export const useChannels = () => useAppStore((state) => state.channels)
 
 export const useBattles = () => useAppStore((state) => state.battles)
+
+export const useUsers = () => useAppStore((state) => state.users)
 
 export const useActiveChannel = (): string | null =>
   useAppStore((state) => state.activeChannel)

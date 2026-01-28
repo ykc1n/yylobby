@@ -49,6 +49,33 @@ function createWindow(): void {
   }
 }
 
+// Debug window for viewing lobby state in real-time (development only)
+function createDebugWindow(): void {
+  const debugWindow = new BrowserWindow({
+    width: 600,
+    height: 800,
+    title: 'Lobby State Debug',
+    resizable: true,
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
+    }
+  })
+
+  debugWindow.on('ready-to-show', () => {
+    attachWindow(debugWindow)
+    debugWindow.show()
+  })
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    debugWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/debug.html`)
+  } else {
+    debugWindow.loadFile(join(__dirname, '../renderer/debug.html'))
+  }
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 app.whenReady().then(() => {
@@ -59,6 +86,11 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  // Open debug window in development mode
+  if (is.dev) {
+    createDebugWindow()
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

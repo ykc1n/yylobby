@@ -21,7 +21,7 @@ function LoginModal({
   const [username, setUsername] = useState('testbot12345')
   const [password, setPassword] = useState('123')
   const [error, setError] = useState('')
-  const { login, isLoggingIn, joinChannel } = useActions()
+  const { login, isLoggingIn } = useActions()
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
 
@@ -33,7 +33,6 @@ function LoginModal({
     try {
       const result = await login(username, password)
       if (result.ResultCode === 0) {
-        joinChannel('#zk')
         onClose()
       } else {
         setError(result.Message || 'Login failed')

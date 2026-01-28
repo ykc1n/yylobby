@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate, ChatMessage } from './types/AppState'
+import { User } from './commands'
 
 const MAX_MESSAGES_PER_CHANNEL = 200
 
@@ -31,7 +32,8 @@ export class ZerokLobbyState extends EventEmitter {
       channels: {},
       activeChannel: null,
       battles: [],
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
+      users: new Map(),
     }
   }
 
@@ -69,6 +71,39 @@ export class ZerokLobbyState extends EventEmitter {
       ...this.state,
       lobby: { ...this.state.lobby, ...lobby },
       lastUpdated: Date.now()
+    }
+    this.emitStateChange()
+  }
+
+  addUserToChannel(channelName: string, user: string): void {
+    const channel = this.state.channels[channelName]
+    console.log(user)
+    if (!channel) return //this line might be meme
+    if(channel.users.includes(user)) return
+    const updatedUsers = [...channel.users, user]
+    this.state = {
+        ...this.state,
+        channels: {
+          ...this.state.channels,
+          [channelName]: { ...channel, users: updatedUsers }
+        },
+        lastUpdated: Date.now()
+    }
+    this.emitStateChange()
+    
+  }
+
+  removeUserFromChannel(channelName: string, user: string): void {
+    const channel = this.state.channels[channelName]
+    if (!channel) return
+    const updatedUsers = channel.users.filter(u => u !== user)
+    this.state = {
+        ...this.state,
+        channels: {
+          ...this.state.channels,
+          [channelName]: { ...channel, users: updatedUsers }
+        },
+        lastUpdated: Date.now()
     }
     this.emitStateChange()
   }
@@ -112,6 +147,14 @@ export class ZerokLobbyState extends EventEmitter {
       }
       this.emitStateChange()
     }
+  }
+  addUser(user: User): void {
+    this.state = {
+      ...this.state,
+      users: new Map(this.state.users).set(user.Name, user),
+      lastUpdated: Date.now()
+    }
+    this.emitStateChange()
   }
 
   addMessage(message: ChatMessage): void {

@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import type ZerokConnection from './ZerokConnection'
 import type { ZerokLobbyState } from './ZerokLobbyState'
 import { ChatPlace } from './types/AppState'
-
+import {User } from './commands'
 interface LoginResponse {
   ResultCode: number
   Name?: string
@@ -33,6 +33,11 @@ interface SayData {
   IsEmote: boolean
   Ring?: boolean
 }
+
+interface ChannelUserData{
+  ChannelName: string,
+  UserName: string
+} 
 
 /**
  * ZerokLobbyInterface is the controller that wires connection events to state updates.
@@ -102,13 +107,34 @@ export default class ZerokLobbyInterface {
       case 'Say':
         this.handleSay(data as SayData)
         break
+      case 'User':
+        this.handleUser(data as User)
+        break
       // Add more command handlers as needed
+      case 'ChannelUserAdded':
+        this.handleChannelUserAdded(data as ChannelUserData)  
+      break
+      case 'ChannelUserRemoved':
+         this.handleChannelUserRemoved(data as ChannelUserData)  
+      break
       default:
         // Silently ignore common noisy commands
-        if (!['User', 'BattleAdded', 'BattleUpdate', 'ChannelUserAdded', 'ChannelUserRemoved', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {
+        if (!['BattleAdded', 'BattleUpdate', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {
           console.log(`[LobbyInterface] Unhandled command: ${name}`)
         }
     }
+  }
+  private handleUser(data: User): void {
+    this.lobbyState.addUser(data)
+  }
+
+  private handleChannelUserAdded(data: ChannelUserData): void {
+    console.log(data)
+    this.lobbyState.addUserToChannel(data.ChannelName, data.UserName)
+  }
+
+  private handleChannelUserRemoved(data: ChannelUserData): void {
+    this.lobbyState.removeUserFromChannel(data.ChannelName, data.Username)
   }
 
   private handleWelcome(data: WelcomeData): void {

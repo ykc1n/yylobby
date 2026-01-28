@@ -1,3 +1,5 @@
+import { User } from "../commands"
+
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 // Chat message places
@@ -9,6 +11,8 @@ export enum ChatPlace {
   User = 4,  // Private message
   Server = 5
 }
+
+
 
 export interface ChatMessage {
   id: string
@@ -61,6 +65,7 @@ export interface AppState {
   activeChannel: string | null
   battles: BattleData[]
   lastUpdated: number
+  users: Map<string, User>
 }
 
 export interface StateUpdate {
