@@ -1,11 +1,13 @@
 import { BrowserWindow } from 'electron'
-import { lobbyInterface, replayManager, zk_launcher } from '../index'
-import ZerokLobbyInterface from '../ZerokLobbyInterface'
-import { ReplayManager } from '../local/replays'
-import { ZkLauncher } from '../local/zk_launcher'
+import { lobbyState, lobbyInterface, replayManager, zk_launcher } from '../index'
+import type { ZerokLobbyState } from '../ZerokLobbyState'
+import type ZerokLobbyInterface from '../ZerokLobbyInterface'
+import type { ReplayManager } from '../local/replays'
+import type { ZkLauncher } from '../local/zk_launcher'
 
 export interface Context {
-  window_id: number | null
+  windowId: number | null
+  lobbyState: ZerokLobbyState
   lobbyInterface: ZerokLobbyInterface
   replayManager: ReplayManager
   zk_launcher: ZkLauncher
@@ -17,7 +19,7 @@ export const createContext = async ({
   event: Electron.IpcMainInvokeEvent
 }): Promise<Context> => {
   const window = BrowserWindow.fromWebContents(event.sender)
-  const window_id = window?.id ?? null
-  
-  return Promise.resolve({ window_id, lobbyInterface, replayManager, zk_launcher })
+  const windowId = window?.id ?? null
+
+  return { windowId, lobbyState, lobbyInterface, replayManager, zk_launcher }
 }

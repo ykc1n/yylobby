@@ -21,6 +21,10 @@ export class ZkLauncher{
     menus = new Map()
     games = new Map()
 
+    setGame(game: 'zerok' | 'bar'): void {
+        // Game-specific path will be set from settings
+    }
+
     findEngines():void{
         const enginesPath = path.join(this.baseEngineFolder,this.platform)
         if(!fs.existsSync(enginesPath)){
