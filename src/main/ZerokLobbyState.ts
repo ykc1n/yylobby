@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate, ChatMessage } from './types/AppState'
-import { User } from './commands'
+import { BattleHeader, User } from './commands'
 
 const MAX_MESSAGES_PER_CHANNEL = 200
 
@@ -31,7 +31,7 @@ export class ZerokLobbyState extends EventEmitter {
       },
       channels: {},
       activeChannel: null,
-      battles: [],
+      battles: new Map(),
       lastUpdated: Date.now(),
       users: new Map(),
     }
@@ -182,7 +182,7 @@ export class ZerokLobbyState extends EventEmitter {
     this.emitStateChange()
   }
 
-  setBattles(battles: BattleData[]): void {
+  setBattles(battles: Map<number, BattleHeader>): void {
     this.state = {
       ...this.state,
       battles,
@@ -191,30 +191,41 @@ export class ZerokLobbyState extends EventEmitter {
     this.emitStateChange()
   }
 
-  addBattle(battle: BattleData): void {
+  addBattle(battle: BattleHeader): void {
+    const newBattles = new Map(this.state.battles)
+    newBattles.set(battle.BattleID, battle)
     this.state = {
       ...this.state,
-      battles: [...this.state.battles, battle],
+      battles:newBattles,
       lastUpdated: Date.now()
     }
+    console.log(battle)
+    console.log(battle.BattleID)
+    console.log(newBattles)
     this.emitStateChange()
   }
 
-  updateBattle(battleId: number, update: Partial<BattleData>): void {
+  updateBattle(battleId: number, update: Partial<BattleHeader>): void {
+    const newBattles = new Map(this.state.battles)
+    const existing = newBattles.get(battleId)
+    if (!existing) return
+    newBattles.set(battleId, { ...existing, ...update })
+
+    
     this.state = {
       ...this.state,
-      battles: this.state.battles.map((b) =>
-        b.battleId === battleId ? { ...b, ...update } : b
-      ),
+      battles: newBattles,
       lastUpdated: Date.now()
     }
     this.emitStateChange()
   }
 
   removeBattle(battleId: number): void {
+    const newBattles = new Map(this.state.battles)
+    newBattles.delete(battleId)
     this.state = {
       ...this.state,
-      battles: this.state.battles.filter((b) => b.battleId !== battleId),
+      battles: newBattles,
       lastUpdated: Date.now()
     }
     this.emitStateChange()

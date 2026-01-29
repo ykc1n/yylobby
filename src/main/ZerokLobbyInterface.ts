@@ -1,8 +1,8 @@
 import { createHash } from 'crypto'
 import type ZerokConnection from './ZerokConnection'
 import type { ZerokLobbyState } from './ZerokLobbyState'
-import { ChatPlace } from './types/AppState'
-import {User } from './commands'
+import { BattleData, ChatPlace } from './types/AppState'
+import {BattleHeader, User } from './commands'
 interface LoginResponse {
   ResultCode: number
   Name?: string
@@ -111,15 +111,20 @@ export default class ZerokLobbyInterface {
         this.handleUser(data as User)
         break
       // Add more command handlers as needed
+
+      // prob gonna remove some of these redundant handlers
       case 'ChannelUserAdded':
         this.handleChannelUserAdded(data as ChannelUserData)  
       break
       case 'ChannelUserRemoved':
          this.handleChannelUserRemoved(data as ChannelUserData)  
       break
+      case 'BattleAdded':
+        this.lobbyState.addBattle(data.Header as BattleHeader)
+      break
       default:
         // Silently ignore common noisy commands
-        if (!['BattleAdded', 'BattleUpdate', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {
+        if (!['BattleUpdate', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {
           console.log(`[LobbyInterface] Unhandled command: ${name}`)
         }
     }

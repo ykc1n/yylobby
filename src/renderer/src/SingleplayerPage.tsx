@@ -10,29 +10,24 @@ export default function SingleplayerPage(): JSX.Element {
 
   const navLinkClass = ({ isActive }: { isActive: boolean }): string => {
     if (isActive) {
-      return `relative px-4 py-2 text-sm font-medium tracking-wider uppercase transition-all duration-300 ${theme.text} after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-current`
+      return `relative px-4 py-2 text-sm font-normal tracking-[0.1em] uppercase transition-all duration-200 ${theme.text} after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-5 after:h-px after:bg-current after:opacity-60`
     }
-    return "relative px-4 py-2 text-sm font-medium tracking-wider uppercase transition-all duration-300 text-neutral-500 hover:text-neutral-300 hover:bg-white/5"
+    return "relative px-4 py-2 text-sm font-normal tracking-[0.1em] uppercase transition-all duration-200 text-neutral-500 hover:text-neutral-400"
   }
 
   return (<>
-  <style>{`
-    .subnav-glow::after {
-      box-shadow: 0 0 6px rgba(${theme.rgb}, 0.4);
-    }
-  `}</style>
-  <div className="bg-neutral-950/80 backdrop-blur-sm border-b border-neutral-800/50 flex gap-1 px-2 py-1">
-    <NavLink to="/Singleplayer/Replays" className={(props) => `${navLinkClass(props)} ${props.isActive ? 'subnav-glow' : ''}`}>
+  <div className="bg-white/[0.01] backdrop-blur-sm border-b border-white/[0.04] flex gap-1 px-3 py-1">
+    <NavLink to="/Singleplayer/Replays" className={navLinkClass}>
       Replays
     </NavLink>
-    <NavLink to="/Singleplayer/Skirmish" className={(props) => `${navLinkClass(props)} ${props.isActive ? 'subnav-glow' : ''}`}>
+    <NavLink to="/Singleplayer/Skirmish" className={navLinkClass}>
       Skirmish
     </NavLink>
-    <NavLink to="/Singleplayer/Campaign" className={(props) => `${navLinkClass(props)} ${props.isActive ? 'subnav-glow' : ''}`}>
+    <NavLink to="/Singleplayer/Campaign" className={navLinkClass}>
       Campaign
     </NavLink>
   </div>
-  <div>
+  <div className="">
     <Routes>
       <Route path="Replays" element={<ReplaysVeiw />} />
       <Route path="Skirmish" element={<SkirmishVeiw />} />

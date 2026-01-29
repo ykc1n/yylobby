@@ -8,6 +8,7 @@ import { useThemeStore, themeColors } from './themeStore'
 import { useStateSync } from './hooks/useStateSync'
 import { useConnectionStatus, useAuth } from './store/appStore'
 import { useActions } from './hooks/useActions'
+import lobbyBg from './assets/lol.png'
 
 console.log('App loaded!')
 
@@ -51,7 +52,7 @@ function LoginModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-neutral-900 border border-neutral-700/50 rounded-lg shadow-2xl w-full max-w-sm p-6">
+      <div className="relative bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-sm p-6">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-neutral-500 hover:text-white transition-colors"
@@ -61,28 +62,28 @@ function LoginModal({
           </svg>
         </button>
 
-        <h2 className="text-xl font-semibold text-white mb-6">Login</h2>
+        <h2 className="text-xl font-normal tracking-wide text-white mb-6">Login</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-neutral-400 mb-1.5">Username</label>
+            <label className="block text-sm text-neutral-400 mb-1.5 tracking-wide uppercase">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 transition-colors"
               placeholder="Enter username"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-400 mb-1.5">Password</label>
+            <label className="block text-sm text-neutral-400 mb-1.5 tracking-wide uppercase">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500 transition-colors"
+              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 transition-colors"
               placeholder="Enter password"
             />
           </div>
@@ -94,7 +95,7 @@ function LoginModal({
           <button
             type="submit"
             disabled={isLoggingIn || !username || !password}
-            className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {isLoggingIn ? 'Logging in...' : 'Login'}
           </button>
@@ -117,7 +118,7 @@ function ProfileButton({ onLoginClick }: { onLoginClick: () => void }): JSX.Elem
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
-        <span className="text-xs font-medium text-neutral-300">{auth.username}</span>
+        <span className="text-sm font-normal tracking-wide text-neutral-300">{auth.username}</span>
       </div>
     )
   }
@@ -130,7 +131,7 @@ function ProfileButton({ onLoginClick }: { onLoginClick: () => void }): JSX.Elem
       <svg className="w-4 h-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
       </svg>
-      <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Login</span>
+      <span className="text-xs font-normal text-neutral-400 uppercase tracking-[0.12em]">Login</span>
     </button>
   )
 }
@@ -146,7 +147,7 @@ function ConnectionIndicator(): JSX.Element {
     <button
       onClick={() => status === 'disconnected' && connect()}
       disabled={isConnectingState}
-      className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all duration-200 ${
+      className={`flex items-center gap-2 px-2 py-1.5 rounded transition-all duration-200 ${
         isOnline
           ? 'cursor-default'
           : isConnectingState
@@ -162,21 +163,21 @@ function ConnectionIndicator(): JSX.Element {
       }
     >
       <span
-        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
           isOnline
-            ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'
+            ? 'bg-emerald-400'
             : isConnectingState
-              ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)] animate-pulse'
-              : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+              ? 'bg-amber-400 animate-pulse'
+              : 'bg-red-400'
         }`}
       />
       <span
-        className={`text-xs font-medium uppercase tracking-wider ${
+        className={`text-xs font-normal tracking-[0.1em] uppercase ${
           isOnline
-            ? 'text-green-400'
+            ? 'text-emerald-400/80'
             : isConnectingState
-              ? 'text-yellow-400'
-              : 'text-red-400'
+              ? 'text-amber-400/80'
+              : 'text-red-400/80'
         }`}
       >
         {isOnline ? 'Online' : isConnectingState ? 'Connecting' : 'Offline'}
@@ -195,50 +196,36 @@ function App(): JSX.Element {
 
   const navLinkClass = ({ isActive }: { isActive: boolean }): string => {
     if (isActive) {
-      return `relative px-5 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 ${theme.text} bg-${themeColor}-400/5 after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:via-current after:to-transparent`
+      return `relative px-5 py-3 text-sm font-normal tracking-[0.12em] uppercase transition-all duration-200 ${theme.text} after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-6 after:h-px after:bg-current after:opacity-60`
     }
-    return 'relative px-5 py-3 text-sm font-medium tracking-widest uppercase transition-all duration-300 text-neutral-400 hover:text-neutral-200 hover:bg-white/5'
+    return 'relative px-5 py-3 text-sm font-normal tracking-[0.12em] uppercase transition-all duration-200 text-neutral-500 hover:text-neutral-300'
   }
 
   return (
     <HashRouter>
-      <div className="dark min-h-[100vh] bg-neutral-900 bg-cover bg-center bg-no-repeat font-[motiva-sans,sans-serif] text-white">
-        <style>{`
-          .nav-glow::after {
-            box-shadow: 0 0 8px rgba(${theme.rgb}, 0.5);
-          }
-        `}</style>
-        <div className="bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-800/50 flex items-center justify-between">
+      <div className="dark min-h-[100vh] bg-neutral-950 bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: `url(${lobbyBg})` }}>
+        <div className="bg-white/[0.02] backdrop-blur-2xl border-b border-white/[0.06] flex items-center justify-between">
           <div className="flex">
-            <NavLink
-              to="/"
-              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
-            >
+            <NavLink to="/" className={navLinkClass}>
               Home
             </NavLink>
-            <NavLink
-              to="/Singleplayer"
-              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
-            >
+            <NavLink to="/Singleplayer" className={navLinkClass}>
               Singleplayer
             </NavLink>
-            <NavLink
-              to="/Multiplayer"
-              className={(props) => `${navLinkClass(props)} ${props.isActive ? 'nav-glow' : ''}`}
-            >
+            <NavLink to="/Multiplayer" className={navLinkClass}>
               Multiplayer
             </NavLink>
           </div>
 
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center gap-3 px-4">
             <ProfileButton onLoginClick={() => setShowLoginModal(true)} />
-            <div className="w-px h-6 bg-neutral-700/50" />
+            <div className="w-px h-5 bg-white/10" />
             <ConnectionIndicator />
-            <div className="w-px h-6 bg-neutral-700/50" />
+            <div className="w-px h-5 bg-white/10" />
             <NavLink
               to="/Settings"
               className={({ isActive }) =>
-                `px-4 py-2 text-sm font-medium tracking-widest uppercase transition-all duration-300 hover:bg-white/5 rounded
+                `px-4 py-2 text-sm font-normal tracking-[0.12em] uppercase transition-all duration-200
                 ${isActive ? theme.text : 'text-neutral-500 hover:text-neutral-300'}`
               }
             >

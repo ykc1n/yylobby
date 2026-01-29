@@ -71,8 +71,8 @@ function StateViewer(): JSX.Element {
         keyName="channels"
       />
       <Section
-        title={`battles (${state.battles.length})`}
-        data={state.battles}
+        title={`battles (${state.battles.size})`}
+        data={state.battles.entries().toArray()}
         keyName="battles"
       />
       <div className="text-xs text-muted-foreground mt-4">
