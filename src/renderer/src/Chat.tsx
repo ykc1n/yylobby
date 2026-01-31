@@ -16,6 +16,8 @@ function formatTime(isoString: string): string {
 export function ChatPanel(): JSX.Element {
   const [inputValue, setInputValue] = useState('')
   const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [showAddChannel, setShowAddChannel] = useState(false)
+  const [newChannelName, setNewChannelName] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
@@ -23,7 +25,7 @@ export function ChatPanel(): JSX.Element {
   const channels = useChannels()
   const activeChannel = useActiveChannel()
   const activeChannelData = useActiveChannelData()
-  const { sendMessage, setActiveChannel } = useActions()
+  const { sendMessage, setActiveChannel, joinChannel } = useActions()
 
   const channelList = Object.values(channels)
   const messages = activeChannelData?.messages ?? []
@@ -66,6 +68,24 @@ export function ChatPanel(): JSX.Element {
     }
   }
 
+  const handleAddChannel = (): void => {
+    if (newChannelName.trim()) {
+      joinChannel(newChannelName.trim())
+      setNewChannelName('')
+      setShowAddChannel(false)
+    }
+  }
+
+  const handleAddChannelKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddChannel()
+    } else if (e.key === 'Escape') {
+      setShowAddChannel(false)
+      setNewChannelName('')
+    }
+  }
+
   return (
     <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden">
       {/* Header */}
@@ -81,7 +101,7 @@ export function ChatPanel(): JSX.Element {
         </div>
 
         {/* Channel Tabs */}
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto items-center">
           {channelList.length === 0 ? (
             <span className="text-xs text-neutral-600">No channels</span>
           ) : (
@@ -92,13 +112,55 @@ export function ChatPanel(): JSX.Element {
                 className={`px-3 py-1.5 text-xs font-normal tracking-wide rounded-md transition-all duration-200 whitespace-nowrap
                   ${
                     activeChannel === channel.name
-                      ? `bg-white/[0.06] ${theme.text}`
-                      : 'text-neutral-500 hover:text-neutral-400'
+                      ? `bg-white/20 ${theme.text}`
+                      : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/10'
                   }`}
               >
                 #{channel.name}
               </button>
             ))
+          )}
+
+          {/* Add Channel Button/Input */}
+          {showAddChannel ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+                onKeyDown={handleAddChannelKeyDown}
+                placeholder="channel name"
+                autoFocus
+                className="w-24 px-2 py-1 text-xs bg-white/10 border border-white/20 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors"
+              />
+              <button
+                onClick={handleAddChannel}
+                disabled={!newChannelName.trim()}
+                className={`p-1 rounded-md ${theme.bg} ${theme.bgHover} disabled:bg-white/10 disabled:text-neutral-600 text-white transition-all duration-200`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => { setShowAddChannel(false); setNewChannelName('') }}
+                className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white transition-all duration-200"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddChannel(true)}
+              className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white transition-all duration-200"
+              title="Join channel"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           )}
         </div>
       </div>

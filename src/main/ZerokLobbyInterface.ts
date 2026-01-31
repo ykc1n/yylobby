@@ -122,6 +122,9 @@ export default class ZerokLobbyInterface {
       case 'BattleAdded':
         this.lobbyState.addBattle(data.Header as BattleHeader)
       break
+      case 'UserDisconnected':
+        this.lobbyState.removeUser((data as { Name: string }).Name)
+      break
       default:
         // Silently ignore common noisy commands
         if (!['BattleUpdate', 'UserDisconnected', 'MatchMakerStatus'].includes(name)) {

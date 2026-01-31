@@ -157,6 +157,18 @@ export class ZerokLobbyState extends EventEmitter {
     this.emitStateChange()
   }
 
+  removeUser(username: string): void {
+    const newUsers = new Map(this.state.users)
+    newUsers.delete(username)
+    this.state = {
+      ...this.state,
+      users: newUsers,
+      lastUpdated: Date.now()
+    }
+    this.emitStateChange()
+    
+  }
+
   addMessage(message: ChatMessage): void {
     const channelName = message.target
     const channel = this.state.channels[channelName]
