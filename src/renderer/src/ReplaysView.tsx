@@ -2,6 +2,15 @@ import { useState } from 'react'
 import {trpc} from '../utils/trpc'
 import { useThemeStore, themeColors } from './themeStore'
 
+// Hexagon grid pattern - proper honeycomb tiling
+const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
+  `<svg width="24" height="42" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 0l12 7v14l-12 7-12-7V7z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+    <path d="M0 21l12 7v14l-12 7-12-7V28z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+    <path d="M24 21l12 7v14l-12 7-12-7V28z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+  </svg>`
+)}`
+
 interface PlayerData {
     name: string
     [key: string]: unknown
@@ -35,7 +44,7 @@ function Replay(props:{
     const theme = props.theme
 
     const teamDivs = teams.keys().map(team=>(
-        <div className={`flex flex-col gap-1 ${team==winners? 'text-emerald-400' : 'text-red-400'}`} key={`${team}`}>
+        <div className={`flex flex-col gap-0.5 ${team==winners? 'text-emerald-400/80' : 'text-red-400/70'}`} key={`${team}`}>
             {teams.get(team)?.map(player => (
                 <p key={player.name} className="text-sm truncate">{player.name}</p>
             ))}
@@ -44,30 +53,30 @@ function Replay(props:{
 
     return (
         <div
-            className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 group
+            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 group shadow-lg
                 ${props.selected
-                    ? `${theme.border} ${theme.bgSubtle}`
-                    : 'border-neutral-800 bg-neutral-900/50 hover:border-neutral-700 hover:bg-neutral-900'
+                    ? 'bg-gradient-to-br from-neutral-700/55 to-neutral-800/50 border border-white/20'
+                    : 'bg-gradient-to-br from-neutral-800/45 to-neutral-900/35 hover:from-neutral-700/55 hover:to-neutral-800/50 border border-white/10 hover:border-white/20'
                 }`}
             onClick={() => props.replaySelector(props.replayData.filename)}
         >
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-3">
                 {/* Map Preview */}
-                <div className="w-16 h-16 rounded-lg bg-neutral-800/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                <div className="w-14 h-14 rounded-lg bg-white/[0.03] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <svg className="w-6 h-6 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
                 </div>
 
                 {/* Replay Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="font-medium text-white text-sm mb-1">{gameType} on {map}</div>
-                    <div className="text-xs text-neutral-500 mb-3">
-                        {date ? new Date(date).toLocaleDateString() : 'Unknown'} • {durationMinutes} min
+                    <div className="font-normal text-white/85 text-sm tracking-wide mb-1">{gameType} on {map}</div>
+                    <div className="text-xs text-neutral-500 mb-2 tracking-wide">
+                        {date ? new Date(date).toLocaleDateString() : 'Unknown'} · {durationMinutes} min
                     </div>
-                    <div className='flex gap-3 text-sm'>
+                    <div className='flex gap-3 text-sm tracking-wide'>
                         {teamDivs.flatMap((div, idx) => idx === 0 ? [div] : [
-                            <span key={`vs-${idx}`} className="text-neutral-600 self-center font-medium">vs</span>,
+                            <span key={`vs-${idx}`} className="text-neutral-600 self-center text-xs">vs</span>,
                             div
                         ])}
                     </div>
@@ -75,8 +84,8 @@ function Replay(props:{
 
                 {/* Play Icon on hover */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg className={`w-5 h-5 ${theme.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <svg className={`w-4 h-4 ${theme.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     </svg>
                 </div>
             </div>
@@ -96,8 +105,8 @@ function SelectedReplay(props:{
     const theme = props.theme
 
     const teamDivs = teams.keys().map(team=>(
-        <div className={`flex flex-col gap-1 p-3 rounded-lg border ${team==winners? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5' : 'text-red-400 border-red-500/20 bg-red-500/5'}`} key={`${team}`}>
-            <div className="text-[10px] uppercase tracking-wider mb-1 opacity-60">
+        <div className={`flex flex-col gap-0.5 p-2.5 rounded-lg border ${team==winners? 'text-emerald-400/80 border-emerald-500/10 bg-emerald-500/[0.03]' : 'text-red-400/70 border-red-500/10 bg-red-500/[0.03]'}`} key={`${team}`}>
+            <div className="text-[10px] tracking-wide mb-0.5 opacity-50">
                 {team==winners ? 'Winner' : 'Defeated'}
             </div>
             {teams.get(team)?.map(player => (
@@ -111,37 +120,37 @@ function SelectedReplay(props:{
     }
 
     return (
-        <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+        <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl p-4 shadow-lg">
             {/* Map Preview */}
-            <div className="aspect-video bg-neutral-800/50 rounded-lg mb-4 flex items-center justify-center">
-                <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            <div className="aspect-video bg-neutral-800/50 rounded-lg mb-4 flex items-center justify-center border border-white/10">
+                <svg className="w-10 h-10 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
             </div>
 
-            <h3 className="text-lg font-semibold text-white mb-1">{props.replayData.gameType} on {props.replayData.map}</h3>
-            <div className="text-sm text-neutral-500 mb-4">
-                {props.replayData.date ? new Date(props.replayData.date).toLocaleString() : 'Unknown'} • {durationMinutes} min
+            <h3 className="text-base font-normal tracking-wide text-white/90 mb-1">{props.replayData.gameType} on {props.replayData.map}</h3>
+            <div className="text-sm text-neutral-500 mb-4 tracking-wide">
+                {props.replayData.date ? new Date(props.replayData.date).toLocaleString() : 'Unknown'} · {durationMinutes} min
             </div>
 
             {/* Teams */}
-            <div className='flex gap-3 justify-center mb-4'>
+            <div className='flex gap-2 justify-center mb-4'>
                 {teamDivs.flatMap((div, idx) => idx === 0 ? [div] : [
-                    <span key={`vs-${idx}`} className="text-neutral-600 self-center font-semibold">VS</span>,
+                    <span key={`vs-${idx}`} className="text-neutral-600 self-center text-xs">vs</span>,
                     div
                 ])}
             </div>
 
-            <div className='text-xs text-neutral-600 font-mono truncate mb-4 p-2 bg-neutral-900/50 rounded'>
+            <div className='text-[11px] text-neutral-600 font-mono truncate mb-4 p-2 bg-neutral-800/50 rounded-lg border border-white/10'>
                 {props.replayData.filename}
             </div>
 
             <button
                 onClick={handlePlayReplay}
-                className={`w-full py-3 ${theme.bg} ${theme.bgHover} text-white text-sm font-semibold rounded-lg transition-all duration-200 ${theme.shadow} ${theme.shadowHover}`}
+                className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200`}
             >
                 <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                 </svg>
                 Play Replay
             </button>
@@ -180,43 +189,25 @@ export default function ReplaysVeiw():JSX.Element{
     }
 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950">
-            {/* Game Type Tabs */}
-            <div className='flex gap-2 p-4 border-b border-neutral-800/50'>
-                <button
-                    onClick={() => handleGameChange('zerok')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                        ${selectedGame === 'zerok'
-                            ? `${theme.bgSubtle} ${theme.text} border ${theme.border}`
-                            : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5 border border-transparent'
-                        }`}
-                >
-                    Zero-K
-                </button>
-                <button
-                    onClick={() => handleGameChange('bar')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                        ${selectedGame === 'bar'
-                            ? `${theme.bgSubtle} ${theme.text} border ${theme.border}`
-                            : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5 border border-transparent'
-                        }`}
-                >
-                    Beyond All Reason
-                </button>
-            </div>
+        <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden">
 
-            <div className='flex-1 grid grid-cols-3 gap-6 p-6 overflow-hidden min-h-0 min-w-0'>
+            <div className='flex-1 grid grid-cols-3 gap-4 p-4 overflow-hidden min-h-0 min-w-0'>
                 {/* Replay List */}
                 <div className='col-span-2 flex flex-col overflow-hidden min-w-0'>
-                    <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg flex-1 flex flex-col overflow-hidden">
-                        <div className="px-4 py-3 border-b border-neutral-800/50">
+                    <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl flex-1 flex flex-col overflow-hidden relative">
+                        {/* Hex Grid Background */}
+                        <div
+                            className="absolute inset-0 opacity-100 pointer-events-none"
+                            style={{ backgroundImage: `url("${hexGridSvg}")` }}
+                        />
+                        <div className="px-4 py-3 relative z-10">
                             <div className="flex items-center justify-between">
-                                <h2 className="text-sm font-medium text-white uppercase tracking-wider">Your Replays</h2>
-                                <span className="text-xs text-neutral-500">{allReplays.length} replays</span>
+                                <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase">Replays</h2>
+                                <span className="text-xs text-neutral-500">{allReplays.length}</span>
                             </div>
                         </div>
 
-                        <div className='flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2'>
+                        <div className='flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1.5 relative z-10'>
                            {replayQuery.isSuccess ? (
                                paginatedReplays.length > 0 ? (
                                    paginatedReplays.map(replay => {
@@ -231,22 +222,22 @@ export default function ReplaysVeiw():JSX.Element{
                                    })
                                ) : (
                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600">
-                                       <svg className="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                       <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                        </svg>
-                                       <p className="text-sm">No replays found</p>
+                                       <p className="text-sm text-neutral-600">No replays found</p>
                                    </div>
                                )
                            ) : (
                                <div className="flex flex-col items-center justify-center h-full">
-                                   <div className="relative w-12 h-12 mb-4">
+                                   <div className="relative w-10 h-10 mb-3">
                                        <div
-                                           className="absolute top-0 left-0 w-full h-full border-4 rounded-full animate-spin"
-                                           style={{ borderColor: `rgba(${theme.rgb}, 0.3)`, borderTopColor: `rgba(${theme.rgb}, 1)` }}
+                                           className="absolute top-0 left-0 w-full h-full border-2 rounded-full animate-spin"
+                                           style={{ borderColor: `rgba(${theme.rgb}, 0.2)`, borderTopColor: `rgba(${theme.rgb}, 0.8)` }}
                                        ></div>
                                    </div>
-                                   <div className="text-sm text-neutral-500">
-                                       Loading replays...
+                                   <div className="text-sm text-neutral-600">
+                                       Loading...
                                    </div>
                                </div>
                            )}
@@ -254,11 +245,11 @@ export default function ReplaysVeiw():JSX.Element{
 
                         {/* Pagination Controls */}
                         {replayQuery.isSuccess && totalPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 p-3 border-t border-neutral-800/50">
+                            <div className="flex items-center justify-center gap-2 p-3 relative z-10">
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-1.5 text-xs font-medium tracking-wider uppercase transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed text-neutral-400 ${theme.textHover} hover:bg-white/5 rounded`}
+                                    className="px-3 py-1.5 text-xs font-medium tracking-wide transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed text-neutral-500 hover:text-neutral-400 hover:bg-white/10 rounded"
                                 >
                                     Prev
                                 </button>
@@ -281,10 +272,10 @@ export default function ReplaysVeiw():JSX.Element{
                                                     )}
                                                     <button
                                                         onClick={() => setCurrentPage(page)}
-                                                        className={`w-8 h-8 text-xs font-medium rounded transition-all duration-200
+                                                        className={`w-7 h-7 text-xs font-medium rounded-md transition-all duration-200
                                                             ${currentPage === page
-                                                                ? `${theme.bgSubtle} ${theme.text}`
-                                                                : "text-neutral-500 hover:text-neutral-300 hover:bg-white/5"
+                                                                ? `bg-white/20 ${theme.text}`
+                                                                : "text-neutral-500 hover:text-neutral-400 hover:bg-white/10"
                                                             }`}
                                                     >
                                                         {page}
@@ -297,7 +288,7 @@ export default function ReplaysVeiw():JSX.Element{
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-1.5 text-xs font-medium tracking-wider uppercase transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed text-neutral-400 ${theme.textHover} hover:bg-white/5 rounded`}
+                                    className="px-3 py-1.5 text-xs font-medium tracking-wide transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed text-neutral-500 hover:text-neutral-400 hover:bg-white/10 rounded"
                                 >
                                     Next
                                 </button>
@@ -315,13 +306,13 @@ export default function ReplaysVeiw():JSX.Element{
                             theme={theme}
                         />
                     ) : (
-                        <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-8 text-center">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800/50 flex items-center justify-center">
-                                <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl p-6 text-center shadow-lg">
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-neutral-800/50 border border-white/10 flex items-center justify-center">
+                                <svg className="w-6 h-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
                             </div>
-                            <p className="text-neutral-500 text-sm">Select a replay to view details</p>
+                            <p className="text-neutral-600 text-sm">Select a replay</p>
                         </div>
                     )}
                 </div>

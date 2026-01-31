@@ -22,6 +22,32 @@ export interface ChatMessage {
   isEmote: boolean
 }
 
+export interface User {
+    AccountID: number;
+    Avatar: string;
+    AwaySince?: Date;
+    BanMute: boolean;
+    BanVotes: boolean;
+    BanSpecChat: boolean;
+    BattleID?: number;
+    Clan: string;
+    Country: string;
+    DisplayName: string;
+    Faction: string;
+    InGameSince?: Date;
+    IsAdmin: boolean;
+    IsBot: boolean;
+    LobbyVersion: string;
+    Name: string;
+    SteamID: string;
+    Badges: string[];
+    Icon: string;
+    EffectiveMmElo: number;
+    EffectiveElo: number;
+    Level: number;
+    Rank: number;
+}
+
 export interface ChannelData {
   name: string
   topic: string | null
@@ -30,17 +56,32 @@ export interface ChannelData {
   messages: ChatMessage[]
 }
 
+enum AutohostMode {
+    None = "None",
+    Planetwars = "Planetwars",
+    Generic = "Generic",
+    Teams = "Teams",
+    GameChickens = "GameChickens",
+    GameFFA = "GameFFA"
+}
+
 export interface BattleData {
-  battleId: number
-  title: string
-  founder: string
-  map: string
-  playerCount: number
-  spectatorCount: number
-  isRunning: boolean
-  engine: string
-  game: string
-  mode: string
+    BattleID?: number;
+    Engine: string;
+    Founder: string;
+    Game: string;
+    IsMatchMaker?: boolean;
+    IsRunning?: boolean;
+    Map: string;
+    MaxPlayers?: number;
+    Mode?: AutohostMode;
+    Password: string;
+    PlayerCount?: number;
+    RunningSince?: Date;
+    SpectatorCount?: number;
+    Title: string;
+    TimeQueueEnabled?: boolean;
+    MaxEvenPlayers?: number;
 }
 
 export interface AppState {
@@ -61,9 +102,9 @@ export interface AppState {
   }
   channels: Record<string, ChannelData>
   activeChannel: string | null
-  battles: BattleData[]
+  battles: Map<number, BattleData>
   lastUpdated: number
-  users: Map<string, unknown>
+  users: Map<string, User>
 }
 
 interface AppStore extends AppState {
@@ -89,7 +130,7 @@ const initialState: AppState = {
   },
   channels: {},
   activeChannel: null,
-  battles: [],
+  battles: new Map(),
   lastUpdated: 0,
   users: new Map()
 }
@@ -114,11 +155,11 @@ export const useLobbyInfo = () => useAppStore((state) => state.lobby)
 
 export const useUserCount = (): number => useAppStore((state) => state.lobby.userCount)
 
-export const useChannels = () => useAppStore((state) => state.channels)
+export const useChannels = (): Record<string, ChannelData> => useAppStore((state) => state.channels)
 
-export const useBattles = () => useAppStore((state) => state.battles)
+export const useBattles = (): Map<number, BattleData> => useAppStore((state) => state.battles)
 
-export const useUsers = () => useAppStore((state) => state.users)
+export const useUsers = (): Map<string, User> => useAppStore((state) => state.users)
 
 export const useActiveChannel = (): string | null =>
   useAppStore((state) => state.activeChannel)

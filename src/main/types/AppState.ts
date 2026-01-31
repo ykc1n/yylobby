@@ -1,4 +1,4 @@
-import { User } from "../commands"
+import { BattleHeader, User } from "../commands"
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
@@ -32,18 +32,6 @@ export interface ChannelData {
   messages: ChatMessage[]
 }
 
-export interface BattleData {
-  battleId: number
-  title: string
-  founder: string
-  map: string
-  playerCount: number
-  spectatorCount: number
-  isRunning: boolean
-  engine: string
-  game: string
-  mode: string
-}
 
 export interface AppState {
   connection: {
@@ -63,7 +51,7 @@ export interface AppState {
   }
   channels: Record<string, ChannelData>
   activeChannel: string | null
-  battles: BattleData[]
+  battles: Map<number, BattleHeader>
   lastUpdated: number
   users: Map<string, User>
 }

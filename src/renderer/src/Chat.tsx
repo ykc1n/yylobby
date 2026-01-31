@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useThemeStore, themeColors } from './themeStore'
 import { useChannels, useActiveChannel, useActiveChannelData, useUsers} from './store/appStore'
 import { useActions } from './hooks/useActions'
+import rankImage from './assets/rankImagesLarge/0_0.png'
 
 function formatTime(isoString: string): string {
   try {
@@ -15,6 +16,8 @@ function formatTime(isoString: string): string {
 export function ChatPanel(): JSX.Element {
   const [inputValue, setInputValue] = useState('')
   const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [showAddChannel, setShowAddChannel] = useState(false)
+  const [newChannelName, setNewChannelName] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
@@ -22,11 +25,13 @@ export function ChatPanel(): JSX.Element {
   const channels = useChannels()
   const activeChannel = useActiveChannel()
   const activeChannelData = useActiveChannelData()
-  const { sendMessage, setActiveChannel } = useActions()
+  const { sendMessage, setActiveChannel, joinChannel } = useActions()
 
   const channelList = Object.values(channels)
   const messages = activeChannelData?.messages ?? []
   const users = activeChannelData?.users ?? []
+
+
 
   const filteredUsers = useMemo(() => {
     if (!userSearchQuery.trim()) return users
@@ -35,6 +40,13 @@ export function ChatPanel(): JSX.Element {
   }, [users, userSearchQuery])
 
   const knownUsers = useUsers()
+    
+  const getUserIcon = (username: string): string => {
+    const user = knownUsers.get(username)
+    if (!user) return rankImage
+    return `/src/assets/rankImagesLarge/${user.Icon}.png`
+
+  }
   console.log(users)
 
   // Auto-scroll to bottom when new messages arrive
@@ -56,39 +68,99 @@ export function ChatPanel(): JSX.Element {
     }
   }
 
+  const handleAddChannel = (): void => {
+    if (newChannelName.trim()) {
+      joinChannel(newChannelName.trim())
+      setNewChannelName('')
+      setShowAddChannel(false)
+    }
+  }
+
+  const handleAddChannelKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddChannel()
+    } else if (e.key === 'Escape') {
+      setShowAddChannel(false)
+      setNewChannelName('')
+    }
+  }
+
   return (
-    <div className="h-full flex flex-col bg-neutral-950/70 border border-neutral-800/50 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-neutral-800/50">
+      <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-white uppercase tracking-wider">Chat</h2>
+          <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase">Chat</h2>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-emerald-400/70 rounded-full" />
             <span className="text-xs text-neutral-500">
-              {users.length} in channel
+              {users.length}
             </span>
           </div>
         </div>
 
         {/* Channel Tabs */}
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto items-center">
           {channelList.length === 0 ? (
-            <span className="text-xs text-neutral-600 italic">No channels joined</span>
+            <span className="text-xs text-neutral-600">No channels</span>
           ) : (
             channelList.map((channel) => (
               <button
                 key={channel.name}
                 onClick={() => setActiveChannel(channel.name)}
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200 whitespace-nowrap
+                className={`px-3 py-1.5 text-xs font-normal tracking-wide rounded-md transition-all duration-200 whitespace-nowrap
                   ${
                     activeChannel === channel.name
-                      ? `${theme.bgSubtle} ${theme.text}`
-                      : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                      ? `bg-white/20 ${theme.text}`
+                      : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/10'
                   }`}
               >
                 #{channel.name}
               </button>
             ))
+          )}
+
+          {/* Add Channel Button/Input */}
+          {showAddChannel ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+                onKeyDown={handleAddChannelKeyDown}
+                placeholder="channel name"
+                autoFocus
+                className="w-24 px-2 py-1 text-xs bg-white/10 border border-white/20 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-colors"
+              />
+              <button
+                onClick={handleAddChannel}
+                disabled={!newChannelName.trim()}
+                className={`p-1 rounded-md ${theme.bg} ${theme.bgHover} disabled:bg-white/10 disabled:text-neutral-600 text-white transition-all duration-200`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => { setShowAddChannel(false); setNewChannelName('') }}
+                className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white transition-all duration-200"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddChannel(true)}
+              className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white transition-all duration-200"
+              title="Join channel"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           )}
         </div>
       </div>
@@ -97,17 +169,17 @@ export function ChatPanel(): JSX.Element {
       <div className="flex-1 flex min-h-0">
         {/* Messages Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
             {messages.length === 0 ? (
-              <div className="text-center text-neutral-600 text-sm italic py-8">
-                {activeChannel ? 'No messages yet' : 'Join a channel to start chatting'}
+              <div className="text-center text-neutral-600 text-sm py-8">
+                {activeChannel ? 'No messages yet' : 'Join a channel to chat'}
               </div>
             ) : (
               messages.map((msg) => (
                 <div key={msg.id} className={msg.isEmote ? 'italic' : ''}>
                   <div className="group">
                     <div className="flex items-baseline gap-2 mb-0.5">
-                      <span className={`text-sm font-medium ${theme.text}`}>
+                      <span className={`text-sm font-normal tracking-wide ${theme.text}`}>
                         {msg.isEmote ? '* ' : ''}
                         {msg.user}
                       </span>
@@ -115,7 +187,7 @@ export function ChatPanel(): JSX.Element {
                         {formatTime(msg.time)}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-300 leading-relaxed break-words">
+                    <p className="text-sm text-neutral-400 leading-relaxed break-words tracking-wide">
                       {msg.text}
                     </p>
                   </div>
@@ -126,29 +198,27 @@ export function ChatPanel(): JSX.Element {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-neutral-800/50">
+          <div className="p-3">
             <div className="flex gap-2">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={activeChannel ? `Message #${activeChannel}...` : 'Join a channel to chat'}
+                placeholder={activeChannel ? `Message #${activeChannel}...` : 'Join a channel'}
                 disabled={!activeChannel}
-                className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onFocus={(e) => (e.currentTarget.style.borderColor = `rgba(${theme.rgb}, 0.4)`)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '')}
+                className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-white/[0.12] transition-colors disabled:opacity-40 disabled:cursor-not-allowed tracking-wide"
               />
               <button
                 onClick={handleSend}
                 disabled={!inputValue.trim() || !activeChannel}
-                className={`px-4 py-2 ${theme.bg} ${theme.bgHover} disabled:bg-neutral-800 disabled:text-neutral-600 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:cursor-not-allowed`}
+                className={`px-4 py-2 ${theme.bg} ${theme.bgHover} disabled:bg-white/[0.04] disabled:text-neutral-600 text-white text-sm font-normal rounded-lg transition-all duration-200 disabled:cursor-not-allowed`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                   />
                 </svg>
@@ -158,9 +228,9 @@ export function ChatPanel(): JSX.Element {
         </div>
 
         {/* User List Sidebar */}
-        <div className="w-48 border-l border-neutral-800/50 flex flex-col">
+        <div className="w-44 flex flex-col">
           {/* User List Header */}
-          <div className="p-3 border-b border-neutral-800/50">
+          <div className="p-3">
             <div className="relative">
               <svg
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-600"
@@ -171,7 +241,7 @@ export function ChatPanel(): JSX.Element {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
               </svg>
@@ -180,9 +250,7 @@ export function ChatPanel(): JSX.Element {
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-7 pr-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-white placeholder-neutral-600 focus:outline-none transition-colors"
-                onFocus={(e) => (e.currentTarget.style.borderColor = `rgba(${theme.rgb}, 0.4)`)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = '')}
+                className="w-full pl-7 pr-2 py-1 bg-white/[0.03] border border-white/[0.06] rounded text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-white/[0.12] transition-colors"
               />
             </div>
           </div>
@@ -191,25 +259,25 @@ export function ChatPanel(): JSX.Element {
           <div className="flex-1 overflow-y-auto">
             {!activeChannel ? (
               <div className="flex flex-col items-center justify-center h-full text-neutral-600 p-3">
-                <svg className="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 mb-1 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={1.5}
+                    strokeWidth={1}
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 </svg>
-                <p className="text-[10px] text-center">Join a channel</p>
+                <p className="text-[10px] text-center text-neutral-600">Join a channel</p>
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-neutral-600 p-3">
-                <p className="text-[10px]">No users found</p>
+                <p className="text-[10px]">No users</p>
               </div>
             ) : (
               <div className="p-2">
                 <div className="flex items-center gap-1.5 px-2 py-1 mb-1">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                  <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 bg-emerald-400/70 rounded-full" />
+                  <span className="text-xs font-normal text-neutral-500 tracking-[0.1em] uppercase">
                     Online
                   </span>
                   <span className="text-[10px] text-neutral-600">{filteredUsers.length}</span>
@@ -218,36 +286,24 @@ export function ChatPanel(): JSX.Element {
                   {filteredUsers.filter((username) => knownUsers.has(username)).map((username) => (
                     <div
                       key={username}
-                      className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/5"
+                      className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/[0.04]"
                     >
                       <div className="relative flex-shrink-0">
-                        <div className="w-5 h-5 rounded bg-neutral-800 flex items-center justify-center">
-                          <span className="text-[10px] font-medium text-neutral-400">
-                            {username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-neutral-950 bg-green-500" />
+                        <img src={getUserIcon(username)} alt="" className="w-5 h-5 rounded" />
+                        
                       </div>
-                      <span className="text-xs text-neutral-300 truncate">{username}</span>
+                      <span className="text-md text-neutral-200 truncate">{username}</span>
                     </div>
                   ))}
-                  <span className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium text-neutral-600 tracking-wide px-2 py-1 block">
                     Unknown
                   </span>
                   {filteredUsers.filter((username) => !knownUsers.has(username)).map((username) => (
                     <div
                       key={username}
-                      className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/5"
+                      className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/[0.04]"
                     >
-                      <div className="relative flex-shrink-0">
-                        <div className="w-5 h-5 rounded bg-neutral-800 flex items-center justify-center">
-                          <span className="text-[10px] font-medium text-neutral-400">
-                            {username.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-neutral-950 bg-green-500" />
-                      </div>
-                      <span className="text-xs text-neutral-300 truncate">{username}</span>
+                      <span className="text-sm text-neutral-400 truncate">{username}</span>
                     </div>
                   ))}
                 </div>

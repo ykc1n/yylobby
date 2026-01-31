@@ -1,16 +1,26 @@
 import { useState } from 'react'
 import { useThemeStore, themeColors } from './themeStore'
+import { useBattles } from './store/appStore'
+
+
 
 interface Battle {
-  id: number
-  title: string
-  host: string
-  map: string
-  players: number
-  maxPlayers: number
-  duration: number
-  isRunning: boolean
-  isPassworded: boolean
+    BattleID?: number;
+    Engine: string;
+    Founder: string;
+    Game: string;
+    IsMatchMaker?: boolean;
+    IsRunning?: boolean;
+    Map: string;
+    MaxPlayers?: number;
+    Mode?: AutohostMode;
+    Password: string;
+    PlayerCount?: number;
+    RunningSince?: Date;
+    SpectatorCount?: number;
+    Title: string;
+    TimeQueueEnabled?: boolean;
+    MaxEvenPlayers?: number;
 }
 
 const MOCK_BATTLES: Battle[] = Array.from({ length: 15 }, (_, i) => ({
@@ -25,49 +35,62 @@ const MOCK_BATTLES: Battle[] = Array.from({ length: 15 }, (_, i) => ({
   isPassworded: Math.random() > 0.8,
 }))
 
+// Hexagon grid pattern - proper honeycomb tiling
+// Each hex: 24w x 28h, row offset 21, column offset 12 for alt rows
+const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
+  `<svg width="24" height="42" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 0l12 7v14l-12 7-12-7V7z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+    <path d="M0 21l12 7v14l-12 7-12-7V28z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+    <path d="M24 21l12 7v14l-12 7-12-7V28z" fill="none" stroke="rgba(255,255,255,0.012)"/>
+  </svg>`
+)}`
+
 export default function BattleList(): JSX.Element {
-  const [battles] = useState<Battle[]>(MOCK_BATTLES)
+  const battles = useBattles() // Replace with actual battles from store
   const [filter, setFilter] = useState<'all' | 'waiting' | 'running'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
 
-  const filteredBattles = battles.filter(battle => {
+  const filteredBattles = battles.values().filter(battle => {
     const matchesFilter = filter === 'all' ||
-      (filter === 'waiting' && !battle.isRunning) ||
-      (filter === 'running' && battle.isRunning)
-    const matchesSearch = battle.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      battle.host.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      battle.map.toLowerCase().includes(searchQuery.toLowerCase())
+      (filter === 'waiting' && !battle.IsRunning) ||
+      (filter === 'running' && battle.IsRunning)
+      console.log(battle)
+    const matchesSearch = battle.Title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      battle.Founder.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      battle.Map.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesFilter && matchesSearch
-  })
+  }).toArray()
 
-  const waitingCount = battles.filter(b => !b.isRunning).length
-  const runningCount = battles.filter(b => b.isRunning).length
+  const waitingCount = battles.values().filter(b => !b.IsRunning).toArray().length
+  const runningCount = battles.values().filter(b => b.IsRunning).toArray().length
 
   return (
-    <div className="h-full flex flex-col bg-neutral-950/70 border border-neutral-800/50 rounded-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden relative">
+      {/* Hex Grid Background */}
+      <div
+        className="absolute inset-0 opacity-100 pointer-events-none"
+        style={{ backgroundImage: `url("${hexGridSvg}")` }}
+      />
       {/* Header */}
-      <div className="px-4 py-3 border-b border-neutral-800/50">
+      <div className="px-4 py-3 relative z-10">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-medium text-white uppercase tracking-wider">Active Battles</h2>
-          <span className="text-xs text-neutral-500">{battles.length} battles</span>
+          <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase">Battles</h2>
+          <span className="text-xs text-neutral-500">{battles.size}</span>
         </div>
 
         {/* Search */}
         <div className="relative mb-3">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search battles..."
-            className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none transition-colors"
-            style={{ ['--focus-border' as string]: `rgba(${theme.rgb}, 0.4)` }}
-            onFocus={(e) => e.currentTarget.style.borderColor = `rgba(${theme.rgb}, 0.4)`}
-            onBlur={(e) => e.currentTarget.style.borderColor = ''}
+            placeholder="Search..."
+            className="w-full pl-9 pr-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-white/[0.12] transition-colors tracking-wide"
           />
         </div>
 
@@ -75,30 +98,30 @@ export default function BattleList(): JSX.Element {
         <div className="flex gap-1">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200
+            className={`px-3 py-1.5 text-xs font-normal tracking-wide rounded-md transition-all duration-200
               ${filter === 'all'
-                ? `${theme.bgSubtle} ${theme.text}`
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                ? `bg-white/20 ${theme.text}`
+                : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/10'
               }`}
           >
-            All ({battles.length})
+            All ({battles.size})
           </button>
           <button
             onClick={() => setFilter('waiting')}
-            className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200
+            className={`px-3 py-1.5 text-xs font-normal tracking-wide rounded-md transition-all duration-200
               ${filter === 'waiting'
-                ? 'bg-green-500/20 text-green-400'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                ? 'bg-emerald-500/30 text-emerald-400'
+                : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/10'
               }`}
           >
             Waiting ({waitingCount})
           </button>
           <button
             onClick={() => setFilter('running')}
-            className={`px-3 py-1.5 text-xs font-medium rounded transition-all duration-200
+            className={`px-3 py-1.5 text-xs font-normal tracking-wide rounded-md transition-all duration-200
               ${filter === 'running'
-                ? 'bg-yellow-500/20 text-yellow-400'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                ? 'bg-amber-500/30 text-amber-400'
+                : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/10'
               }`}
           >
             In Progress ({runningCount})
@@ -107,30 +130,30 @@ export default function BattleList(): JSX.Element {
       </div>
 
       {/* Battle List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 relative z-10">
         {filteredBattles.length > 0 ? (
           filteredBattles.map(battle => (
-            <BattleCard key={battle.id} battle={battle} theme={theme} />
+            <BattleCard key={battle.BattleID} battle={battle} theme={theme} />
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-neutral-600">
-            <svg className="w-12 h-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-10 h-10 mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-sm">No battles found</p>
+            <p className="text-sm text-neutral-600">No battles found</p>
           </div>
         )}
       </div>
 
       {/* Create Battle Button */}
-      <div className="p-3 border-t border-neutral-800/50">
+      <div className="p-3 relative z-10">
         <button
-          className={`w-full py-3 ${theme.bg} ${theme.bgHover} text-white text-sm font-semibold rounded-lg transition-all duration-200 ${theme.shadow} ${theme.shadowHover}`}
+          className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200`}
         >
           <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
           </svg>
-          Host New Battle
+          Host Battle
         </button>
       </div>
     </div>
@@ -139,64 +162,58 @@ export default function BattleList(): JSX.Element {
 
 function BattleCard({ battle, theme }: { battle: Battle; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
   return (
-    <div className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer group
-      ${battle.isRunning
-        ? 'bg-yellow-500/5 border-yellow-500/20 hover:border-yellow-500/40'
-        : `bg-neutral-900/50 border-neutral-800 hover:bg-neutral-900 ${theme.borderHover}`
+    <div className={`p-3 rounded-lg transition-all duration-200 cursor-pointer group shadow-lg
+      ${battle.IsRunning
+        ? 'bg-gradient-to-br from-amber-950/50 to-neutral-900/40 hover:from-amber-950/65 hover:to-neutral-800/55 border border-amber-500/20 hover:border-amber-500/40'
+        : 'bg-gradient-to-br from-neutral-800/45 to-neutral-900/35 hover:from-neutral-700/55 hover:to-neutral-800/50 border border-white/10 hover:border-white/20'
       }`}
     >
       <div className="flex items-start gap-3">
         {/* Map Preview */}
-        <div className="w-16 h-16 rounded bg-neutral-800/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-          <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        <div className="w-14 h-14 rounded-lg bg-white/[0.03] flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <svg className="w-6 h-6 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
         </div>
 
         {/* Battle Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-white text-sm truncate">{battle.title}</span>
-            {battle.isPassworded && (
-              <svg className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <span className="font-normal text-white/85 text-sm tracking-wide truncate">{battle.Title}</span>
+            {false && (
+              <svg className="w-3 h-3 text-amber-400/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             )}
           </div>
 
-          <div className="text-xs text-neutral-500 mb-2">
-            Hosted by <span className="text-neutral-400">{battle.host}</span>
+          <div className="text-xs text-neutral-500 mb-2 tracking-wide">
+            {battle.Founder}
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-4 text-xs tracking-wide">
             {/* Players */}
             <div className="flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <span className={battle.players >= battle.maxPlayers ? 'text-red-400' : 'text-neutral-400'}>
-                {battle.players}/{battle.maxPlayers}
+              <span className={battle.PlayerCount >= battle.MaxPlayers ? 'text-red-400/70' : 'text-neutral-500'}>
+                {battle.PlayerCount}/{battle.MaxPlayers}
               </span>
             </div>
 
             {/* Map */}
-            <div className="flex items-center gap-1.5 text-neutral-400">
-              <svg className="w-3.5 h-3.5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              <span className="truncate">{battle.map}</span>
+            <div className="text-neutral-500 truncate">
+              {battle.Map}
             </div>
 
             {/* Status/Duration */}
-            {battle.isRunning ? (
-              <div className="flex items-center gap-1.5 text-yellow-400">
-                <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
-                <span>{battle.duration}m</span>
+            {battle.IsRunning ? (
+              <div className="flex items-center gap-1.5 text-amber-400/70">
+                <span className="w-1 h-1 bg-amber-400/70 rounded-full animate-pulse" />
+                <span>min</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 text-green-400">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                <span>Waiting</span>
+              <div className="flex items-center gap-1.5 text-emerald-400/70">
+                <span className="w-1 h-1 bg-emerald-400/70 rounded-full" />
+                <span>Open</span>
               </div>
             )}
           </div>
@@ -204,10 +221,10 @@ function BattleCard({ battle, theme }: { battle: Battle; theme: typeof themeColo
 
         {/* Join Button */}
         <button
-          disabled={battle.isRunning || battle.players >= battle.maxPlayers}
-          className={`px-3 py-1.5 text-xs font-medium rounded ${theme.bgSubtle} ${theme.text} border ${theme.border} opacity-0 group-hover:opacity-100 transition-all duration-200 ${theme.bgHover} hover:text-white disabled:bg-neutral-800/50 disabled:text-neutral-600 disabled:border-neutral-700 disabled:cursor-not-allowed`}
+          disabled={battle.IsRunning || battle.PlayerCount >= battle.MaxPlayers}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md bg-white/20 ${theme.text} opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white/30 disabled:bg-white/10 disabled:text-neutral-600 disabled:cursor-not-allowed`}
         >
-          {battle.isRunning ? 'Spectate' : 'Join'}
+          {battle.IsRunning ? 'Spectate' : 'Join'}
         </button>
       </div>
     </div>
