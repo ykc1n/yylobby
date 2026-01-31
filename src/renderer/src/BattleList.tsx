@@ -67,7 +67,7 @@ export default function BattleList(): JSX.Element {
   const runningCount = battles.values().filter(b => b.IsRunning).toArray().length
 
   return (
-    <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden relative">
+    <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden relative shadow-xl shadow-black/30">
       {/* Hex Grid Background */}
       <div
         className="absolute inset-0 opacity-100 pointer-events-none"

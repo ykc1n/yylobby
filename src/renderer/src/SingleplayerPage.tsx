@@ -16,7 +16,7 @@ export default function SingleplayerPage(): JSX.Element {
   }
 
   return (<>
-  <div className="bg-white/[0.01] backdrop-blur-sm border-b border-white/[0.04] flex gap-1 px-3 py-1">
+  <div className="bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex gap-1 px-3 py-1">
     <NavLink to="/Singleplayer/Replays" className={navLinkClass}>
       Replays
     </NavLink>

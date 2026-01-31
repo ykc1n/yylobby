@@ -87,7 +87,7 @@ export default function CampaignView(): JSX.Element {
 
           {/* Mission List */}
           <div className="col-span-2">
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">Missions</h2>
                 <div className="text-xs text-neutral-500">
@@ -169,7 +169,7 @@ export default function CampaignView(): JSX.Element {
           {/* Mission Details */}
           <div>
             {selectedMission ? (
-              <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4 sticky top-4">
+              <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4 sticky top-4">
                 <div className="aspect-video bg-neutral-800/50 rounded-lg mb-4 flex items-center justify-center">
                   <svg className="w-12 h-12 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -206,7 +206,7 @@ export default function CampaignView(): JSX.Element {
                 </Button>
               </div>
             ) : (
-              <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-8 text-center">
+              <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800/50 flex items-center justify-center">
                   <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />

@@ -47,12 +47,12 @@ function LoginModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-sm p-6">
+      <div className="relative bg-black/60 backdrop-blur-2xl border border-white/[0.1] rounded-2xl w-full max-w-sm p-6 shadow-2xl shadow-black/50">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-neutral-500 hover:text-white transition-colors"
@@ -71,7 +71,7 @@ function LoginModal({
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 transition-colors"
+              className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all"
               placeholder="Enter username"
               autoFocus
             />
@@ -83,7 +83,7 @@ function LoginModal({
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 transition-colors"
+              className="w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all"
               placeholder="Enter password"
             />
           </div>
@@ -95,7 +95,7 @@ function LoginModal({
           <button
             type="submit"
             disabled={isLoggingIn || !username || !password}
-            className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed`}
+            className={`w-full py-3 ${theme.bg} ${theme.bgHover} text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg`}
           >
             {isLoggingIn ? 'Logging in...' : 'Login'}
           </button>
@@ -204,7 +204,7 @@ function App(): JSX.Element {
   return (
     <HashRouter>
       <div className="dark min-h-[100vh] bg-neutral-950 bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: `url(${lobbyBg})` }}>
-        <div className="bg-white/[0.02] backdrop-blur-2xl border-b border-white/[0.06] flex items-center justify-between">
+        <div className="bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between shadow-lg shadow-black/20">
           <div className="flex">
             <NavLink to="/" className={navLinkClass}>
               Home

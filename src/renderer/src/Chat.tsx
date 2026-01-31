@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useThemeStore, themeColors } from './themeStore'
 import { useChannels, useActiveChannel, useActiveChannelData, useUsers} from './store/appStore'
 import { useActions } from './hooks/useActions'
@@ -13,11 +14,105 @@ function formatTime(isoString: string): string {
   }
 }
 
+interface ContextMenuState {
+  visible: boolean
+  x: number
+  y: number
+  username: string
+}
+
+function PlayerContextMenu({
+  state,
+  onClose,
+  onAddFriend,
+  onIgnore,
+}: {
+  state: ContextMenuState
+  onClose: () => void
+  onAddFriend: (username: string) => void
+  onIgnore: (username: string) => void
+}): JSX.Element | null {
+  const menuRef = useRef<HTMLDivElement>(null)
+  const themeColor = useThemeStore((state) => state.themeColor)
+  const theme = themeColors[themeColor]
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+
+    const handleEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    if (state.visible) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [state.visible, onClose])
+
+  if (!state.visible) return null
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] min-w-[160px] bg-black/90 backdrop-blur-xl border border-white/[0.15] rounded-lg shadow-2xl shadow-black/60 overflow-hidden"
+      style={{ left: state.x, top: state.y }}
+    >
+      <div className="px-3 py-2 border-b border-white/[0.1] bg-white/[0.02]">
+        <span className={`text-sm font-medium ${theme.text}`}>{state.username}</span>
+      </div>
+      <div className="py-1">
+        <button
+          onClick={() => {
+            onAddFriend(state.username)
+            onClose()
+          }}
+          className="w-full px-3 py-2 text-left text-sm text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          Add Friend
+        </button>
+        <button
+          onClick={() => {
+            onIgnore(state.username)
+            onClose()
+          }}
+          className="w-full px-3 py-2 text-left text-sm text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          Ignore Player
+        </button>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export function ChatPanel(): JSX.Element {
   const [inputValue, setInputValue] = useState('')
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [showAddChannel, setShowAddChannel] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    username: ''
+  })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
@@ -26,6 +121,30 @@ export function ChatPanel(): JSX.Element {
   const activeChannel = useActiveChannel()
   const activeChannelData = useActiveChannelData()
   const { sendMessage, setActiveChannel, joinChannel } = useActions()
+
+  const handlePlayerRightClick = useCallback((e: React.MouseEvent, username: string): void => {
+    e.preventDefault()
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      username
+    })
+  }, [])
+
+  const closeContextMenu = useCallback((): void => {
+    setContextMenu(prev => ({ ...prev, visible: false }))
+  }, [])
+
+  const handleAddFriend = useCallback((username: string): void => {
+    console.log('Add friend:', username)
+    // TODO: Implement friend adding logic
+  }, [])
+
+  const handleIgnorePlayer = useCallback((username: string): void => {
+    console.log('Ignore player:', username)
+    // TODO: Implement ignore logic
+  }, [])
 
   const channelList = Object.values(channels)
   const messages = activeChannelData?.messages ?? []
@@ -87,8 +206,17 @@ export function ChatPanel(): JSX.Element {
   }
 
   return (
-    <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden">
-      {/* Header */}
+    <>
+      {/* Player Context Menu - rendered via portal to document.body */}
+      <PlayerContextMenu
+        state={contextMenu}
+        onClose={closeContextMenu}
+        onAddFriend={handleAddFriend}
+        onIgnore={handleIgnorePlayer}
+      />
+
+      <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden shadow-xl shadow-black/30">
+        {/* Header */}
       <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase">Chat</h2>
@@ -179,7 +307,10 @@ export function ChatPanel(): JSX.Element {
                 <div key={msg.id} className={msg.isEmote ? 'italic' : ''}>
                   <div className="group">
                     <div className="flex items-baseline gap-2 mb-0.5">
-                      <span className={`text-sm font-normal tracking-wide ${theme.text}`}>
+                      <span
+                        className={`text-sm font-normal tracking-wide ${theme.text} cursor-pointer hover:underline`}
+                        onContextMenu={(e) => handlePlayerRightClick(e, msg.user)}
+                      >
                         {msg.isEmote ? '* ' : ''}
                         {msg.user}
                       </span>
@@ -287,10 +418,11 @@ export function ChatPanel(): JSX.Element {
                     <div
                       key={username}
                       className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/[0.04]"
+                      onContextMenu={(e) => handlePlayerRightClick(e, username)}
                     >
                       <div className="relative flex-shrink-0">
                         <img src={getUserIcon(username)} alt="" className="w-5 h-5 rounded" />
-                        
+
                       </div>
                       <span className="text-md text-neutral-200 truncate">{username}</span>
                     </div>
@@ -302,6 +434,7 @@ export function ChatPanel(): JSX.Element {
                     <div
                       key={username}
                       className="flex items-center gap-2 px-2 py-1 rounded transition-colors cursor-pointer hover:bg-white/[0.04]"
+                      onContextMenu={(e) => handlePlayerRightClick(e, username)}
                     >
                       <span className="text-sm text-neutral-400 truncate">{username}</span>
                     </div>
@@ -313,5 +446,6 @@ export function ChatPanel(): JSX.Element {
         </div>
       </div>
     </div>
+    </>
   )
 }

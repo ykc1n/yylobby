@@ -120,7 +120,7 @@ function SelectedReplay(props:{
     }
 
     return (
-        <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl p-4 shadow-lg">
+        <div className="bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-4 shadow-xl shadow-black/30">
             {/* Map Preview */}
             <div className="aspect-video bg-neutral-800/50 rounded-lg mb-4 flex items-center justify-center border border-white/10">
                 <svg className="w-10 h-10 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -194,7 +194,7 @@ export default function ReplaysVeiw():JSX.Element{
             <div className='flex-1 grid grid-cols-3 gap-4 p-4 overflow-hidden min-h-0 min-w-0'>
                 {/* Replay List */}
                 <div className='col-span-2 flex flex-col overflow-hidden min-w-0'>
-                    <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl flex-1 flex flex-col overflow-hidden relative">
+                    <div className="bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl flex-1 flex flex-col overflow-hidden relative shadow-xl shadow-black/30">
                         {/* Hex Grid Background */}
                         <div
                             className="absolute inset-0 opacity-100 pointer-events-none"
@@ -306,7 +306,7 @@ export default function ReplaysVeiw():JSX.Element{
                             theme={theme}
                         />
                     ) : (
-                        <div className="bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl p-6 text-center shadow-lg">
+                        <div className="bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-6 text-center shadow-xl shadow-black/30">
                             <div className="w-12 h-12 mx-auto mb-3 rounded-lg bg-neutral-800/50 border border-white/10 flex items-center justify-center">
                                 <svg className="w-6 h-6 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />

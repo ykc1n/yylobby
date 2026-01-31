@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import BattleList from './BattleList'
+import BattleRoom from './BattleRoom'
 import LobbySidebar from './LobbySidebar'
 import { useThemeStore, themeColors } from './themeStore'
 
@@ -29,7 +30,7 @@ function MatchmakingPanel(): JSX.Element {
   }
 
   return (
-    <div className="h-full flex flex-col bg-neutral-900/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden relative">
+    <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden relative shadow-xl shadow-black/30">
       {/* Hex Grid Background */}
       <div
         className="absolute inset-0 opacity-100 pointer-events-none"
@@ -110,7 +111,7 @@ function MatchmakingPanel(): JSX.Element {
 }
 
 export default function MultiplayerPage(): JSX.Element {
-  const [activeTab, setActiveTab] = useState<'battles' | 'matchmaking'>('battles')
+  const [activeTab, setActiveTab] = useState<'battles' | 'matchmaking' | 'battleroom'>('battles')
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
 
@@ -124,28 +125,42 @@ export default function MultiplayerPage(): JSX.Element {
   return (
     <div className="h-[calc(100vh-52px)] flex flex-col overflow-hidden">
       {/* Sub-navbar */}
-      <div className="bg-white/[0.01] backdrop-blur-sm border-b border-white/[0.04] flex gap-1 px-3 py-1">
+      <div className="bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex items-center gap-1 px-3 py-1">
         <button onClick={() => setActiveTab('battles')} className={navLinkClass('battles')}>
           Battles
         </button>
         <button onClick={() => setActiveTab('matchmaking')} className={navLinkClass('matchmaking')}>
           Matchmaking
         </button>
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-white/[0.1] mx-2" />
+
+        <button onClick={() => setActiveTab('battleroom')} className={navLinkClass('battleroom')}>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+            Battleroom
+          </span>
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 p-3 overflow-hidden">
-        <div className="h-full grid grid-cols-4 gap-3">
-          {/* Left Panel - Battle List or Matchmaking */}
-          <div className="col-span-2 flex flex-col min-h-0">
-            {activeTab === 'battles' ? <BattleList /> : <MatchmakingPanel />}
-          </div>
+        {activeTab === 'battleroom' ? (
+          <BattleRoom />
+        ) : (
+          <div className="h-full grid grid-cols-4 gap-3">
+            {/* Left Panel - Battle List or Matchmaking */}
+            <div className="col-span-2 flex flex-col min-h-0">
+              {activeTab === 'battles' ? <BattleList /> : <MatchmakingPanel />}
+            </div>
 
-          {/* Lobby Sidebar (Chat + Player List) - takes 2 columns */}
-          <div className="col-span-2 flex flex-col min-h-0">
-            <LobbySidebar />
+            {/* Lobby Sidebar (Chat + Player List) - takes 2 columns */}
+            <div className="col-span-2 flex flex-col min-h-0">
+              <LobbySidebar />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

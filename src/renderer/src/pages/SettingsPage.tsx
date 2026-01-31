@@ -28,18 +28,23 @@ export default function SettingsPage(): JSX.Element {
   const theme = themeColors[themeColor]
 
   return (
-    <div className="min-h-[calc(100vh-52px)] p-8">
+    <div className="min-h-[calc(100vh-52px)] p-6">
       <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-normal tracking-wide text-white/90 mb-1">Settings</h1>
-          <p className="text-sm text-neutral-500 tracking-wide">Customize your experience</p>
+        <div className="mb-6 p-6 bg-black/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl shadow-black/30">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+            <h1 className="text-2xl font-normal tracking-wide text-white mb-1">Settings</h1>
+            <p className="text-sm text-neutral-400 tracking-wide">Customize your experience</p>
+          </div>
         </div>
 
         {/* Settings Sections */}
         <div className="space-y-4">
           {/* Theme Color Section */}
-          <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
+          <div className="relative bg-black/30 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 shadow-lg shadow-black/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+            <div className="relative">
             <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-4">Appearance</h2>
 
             <div className="space-y-4">
@@ -102,12 +107,16 @@ export default function SettingsPage(): JSX.Element {
                 </div>
               </div>
             </div>
+            </div>
           </div>
 
           {/* Placeholder for future settings */}
-          <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
-            <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-3">Game Settings</h2>
-            <p className="text-sm text-neutral-600 tracking-wide">More settings coming soon</p>
+          <div className="relative bg-black/30 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 shadow-lg shadow-black/20">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+            <div className="relative">
+              <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-3">Game Settings</h2>
+              <p className="text-sm text-neutral-500 tracking-wide">More settings coming soon</p>
+            </div>
           </div>
         </div>
       </div>

@@ -69,7 +69,7 @@ export default function SkirmishVeiw(): JSX.Element {
         <div className="grid grid-cols-3 gap-6">
           {/* Map Selection */}
           <div className="col-span-2 space-y-4">
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
               <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Select Map</h2>
 
               <div className="grid grid-cols-3 gap-3">
@@ -102,7 +102,7 @@ export default function SkirmishVeiw(): JSX.Element {
             </div>
 
             {/* Game Settings */}
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
               <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Game Settings</h2>
 
               <div className="grid grid-cols-2 gap-4">
@@ -130,7 +130,7 @@ export default function SkirmishVeiw(): JSX.Element {
           {/* Players Panel */}
           <div className="space-y-4">
             {/* You */}
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
               <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Your Team</h2>
 
               <div className={`p-3 ${theme.bgSubtle} border ${theme.border} rounded-lg`}>
@@ -149,7 +149,7 @@ export default function SkirmishVeiw(): JSX.Element {
             </div>
 
             {/* AI Players */}
-            <div className="bg-neutral-950/50 border border-neutral-800/50 rounded-lg p-4">
+            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">AI Opponents</h2>
                 <button
