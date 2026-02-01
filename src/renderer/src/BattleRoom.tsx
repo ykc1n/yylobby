@@ -84,6 +84,32 @@ TODO:
 - finish spec list
 
 */
+
+
+function YesNoVote(): JSX.Element {
+  const votes = {
+    yes: 0,
+    no: 0
+  }
+
+  return (
+      <div>
+        <div className="grid grid-cols-6 mb-2">
+        <button className="p-4 border col-start-2 col-span-1 border-white/[0.1] rounded-lg text-sm text-white bg-green-400/[.3] hover:bg-green-400/[0.05] transition-all">
+          Yes
+          </button>
+          <button className="p-4 border col-start-5  border-white/[0.1] rounded-lg text-sm text-white bg-red-400/[.3] hover:bg-red-400/[0.1] transition-all">
+          No
+          </button>  
+        </div>
+
+        <div className="grid grid-cols-6">
+          <div className="bg-green-400 p-1"></div>
+        </div>
+      </div>
+  )
+}
+
 function TeamBox({ team, theme }: { team: Team; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
   return (
     <div className="flex-1 border border-white/[0.08] rounded-lg p-2   min-w-0 flex flex-col">
@@ -157,16 +183,7 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
       </div>
       {/* yes no vote */}
       <div className="p-3 border-t border-white/[0.06]">
-      <div>
-        <div className="flex justify-evenly mb-2">
-        <button className="p-4 border border-white/[0.1] rounded-lg text-sm text-white hover:bg-white/[0.05] transition-all">
-          Vote 1
-          </button>
-          <button>
-          Vote 2
-          </button>  
-        </div>
-      </div>
+      <YesNoVote />
         <div className="flex gap-2">
           <input
             type="text"

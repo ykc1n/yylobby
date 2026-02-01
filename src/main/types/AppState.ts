@@ -32,6 +32,24 @@ export interface ChannelData {
   messages: ChatMessage[]
 }
 
+export interface ActiveBattle {
+      BattleID?: number;
+      Engine: string;
+      Founder: string;
+      Game: string;
+      IsMatchMaker?: boolean;
+      IsRunning?: boolean;
+      Map: string;
+      MaxPlayers?: number;
+      Mode?: AutohostMode;
+      Password: string;
+      PlayerCount?: number;
+      RunningSince?: Date;
+      SpectatorCount?: number;
+      Title: string;
+      TimeQueueEnabled?: boolean;
+      MaxEvenPlayers?: number;
+}
 
 export interface AppState {
   connection: {

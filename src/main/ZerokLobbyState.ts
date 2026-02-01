@@ -29,6 +29,7 @@ export class ZerokLobbyState extends EventEmitter {
         userCount: 0,
         welcomeMessage: null
       },
+      currentBattle: null,
       channels: {},
       activeChannel: null,
       battles: new Map(),
