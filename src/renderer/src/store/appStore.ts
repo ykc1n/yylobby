@@ -65,6 +65,14 @@ enum AutohostMode {
     GameFFA = "GameFFA"
 }
 
+export interface ActiveBattle {
+    BattleID: number;
+    Bots: any[]; // UpdateBotStatus[]
+    Options: Record<string, string>;
+    Players: any[]; // UpdateUserBattleStatus[]
+    MapOptions: Record<string, string>;
+}
+
 export interface BattleData {
     BattleID?: number;
     Engine: string;
@@ -82,6 +90,13 @@ export interface BattleData {
     Title: string;
     TimeQueueEnabled?: boolean;
     MaxEvenPlayers?: number;
+}
+
+export interface NewsItem {
+  Header: string
+  Text: string
+  Url: string
+  Time: string
 }
 
 export interface AppState {
@@ -105,6 +120,7 @@ export interface AppState {
   battles: Map<number, BattleData>
   lastUpdated: number
   users: Map<string, User>
+  news: NewsItem[]
 }
 
 interface AppStore extends AppState {
@@ -132,7 +148,8 @@ const initialState: AppState = {
   activeChannel: null,
   battles: new Map(),
   lastUpdated: 0,
-  users: new Map()
+  users: new Map(),
+  news: []
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -171,3 +188,5 @@ export const useActiveChannelData = (): ChannelData | null =>
 
 export const useChannelMessages = (channelName: string): ChatMessage[] =>
   useAppStore((state) => state.channels[channelName]?.messages ?? [])
+
+export const useNews = (): NewsItem[] => useAppStore((state) => state.news)

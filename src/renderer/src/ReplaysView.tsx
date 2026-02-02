@@ -22,10 +22,10 @@ interface ReplayData {
     game: string
     gameType: string
     duration: number
-    date: Date
+    date: string
     players: PlayerData[]
     winners?: number[]
-    teams: Map<number, PlayerData[]>
+    teams: Record<number, PlayerData[]>
 }
 
 function Replay(props:{
@@ -43,13 +43,13 @@ function Replay(props:{
     const teams = props.replayData.teams
     const theme = props.theme
 
-    const teamDivs = teams.keys().map(team=>(
-        <div className={`flex flex-col gap-0.5 ${team==winners? 'text-emerald-400/80' : 'text-red-400/70'}`} key={`${team}`}>
-            {teams.get(team)?.map(player => (
+    const teamDivs = Object.entries(teams).map(([teamId, teamPlayers]) => (
+        <div className={`flex flex-col gap-0.5 ${Number(teamId) === winners ? 'text-emerald-400/80' : 'text-red-400/70'}`} key={teamId}>
+            {teamPlayers.map(player => (
                 <p key={player.name} className="text-sm truncate">{player.name}</p>
             ))}
         </div>
-    )).toArray()
+    ))
 
     return (
         <div
@@ -104,16 +104,16 @@ function SelectedReplay(props:{
     const durationMinutes = Math.floor(props.replayData.duration / 60000)
     const theme = props.theme
 
-    const teamDivs = teams.keys().map(team=>(
-        <div className={`flex flex-col gap-0.5 p-2.5 rounded-lg border ${team==winners? 'text-emerald-400/80 border-emerald-500/10 bg-emerald-500/[0.03]' : 'text-red-400/70 border-red-500/10 bg-red-500/[0.03]'}`} key={`${team}`}>
+    const teamDivs = Object.entries(teams).map(([teamId, teamPlayers]) => (
+        <div className={`flex flex-col gap-0.5 p-2.5 rounded-lg border ${Number(teamId) === winners ? 'text-emerald-400/80 border-emerald-500/10 bg-emerald-500/[0.03]' : 'text-red-400/70 border-red-500/10 bg-red-500/[0.03]'}`} key={teamId}>
             <div className="text-[10px] tracking-wide mb-0.5 opacity-50">
-                {team==winners ? 'Winner' : 'Defeated'}
+                {Number(teamId) === winners ? 'Winner' : 'Defeated'}
             </div>
-            {teams.get(team)?.map(player => (
+            {teamPlayers.map(player => (
                 <p key={player.name} className="text-sm truncate">{player.name}</p>
             ))}
         </div>
-    )).toArray()
+    ))
 
     const handlePlayReplay = ():void=>{
         props.playReplay.mutate({filename:props.replayData.filename})
@@ -174,7 +174,7 @@ export default function ReplaysVeiw():JSX.Element{
         replayQuery.data.data.forEach((replay: ReplayData) => replays.set(replay.filename, replay));
     }
 
-    const allReplays = replays.values().toArray()
+    const allReplays = Array.from(replays.values())
     const totalPages = Math.ceil(allReplays.length / ITEMS_PER_PAGE)
     const paginatedReplays = allReplays.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,

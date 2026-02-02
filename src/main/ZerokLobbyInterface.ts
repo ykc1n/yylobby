@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import type ZerokConnection from './ZerokConnection'
 import type { ZerokLobbyState } from './ZerokLobbyState'
-import { BattleData, ChatPlace } from './types/AppState'
+import { BattleData, ChatPlace, NewsItem } from './types/AppState'
 import {BattleHeader, User } from './commands'
 interface LoginResponse {
   ResultCode: number
@@ -95,6 +95,9 @@ export default class ZerokLobbyInterface {
       case 'Welcome':
         this.handleWelcome(data as WelcomeData)
         break
+      case 'NewsList':
+        this.handleNewsList(data as { NewsItems: NewsItem[] })
+        break
       case 'LoginResponse':
         this.handleLoginResponse(data as LoginResponse)
         break
@@ -155,6 +158,11 @@ export default class ZerokLobbyInterface {
       game: data.Game,
       userCount: data.UserCount
     })
+  }
+
+  private handleNewsList(data: { NewsItems: NewsItem[] }): void {
+    console.log('[LobbyInterface] NewsList received:', data.NewsItems?.length ?? 0, 'items')
+    this.lobbyState.updateNews(data.NewsItems ?? [])
   }
 
   private handleLoginResponse(data: LoginResponse): void {

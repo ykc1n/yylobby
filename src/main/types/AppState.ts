@@ -33,22 +33,18 @@ export interface ChannelData {
 }
 
 export interface ActiveBattle {
-      BattleID?: number;
-      Engine: string;
-      Founder: string;
-      Game: string;
-      IsMatchMaker?: boolean;
-      IsRunning?: boolean;
-      Map: string;
-      MaxPlayers?: number;
-      Mode?: AutohostMode;
-      Password: string;
-      PlayerCount?: number;
-      RunningSince?: Date;
-      SpectatorCount?: number;
-      Title: string;
-      TimeQueueEnabled?: boolean;
-      MaxEvenPlayers?: number;
+    BattleID: number;
+    Bots: any[]; // UpdateBotStatus[]
+    Options: Record<string, string>;
+    Players: any[]; // UpdateUserBattleStatus[]
+    MapOptions: Record<string, string>;
+}
+
+export interface NewsItem {
+  Header: string
+  Text: string
+  Url: string
+  Time: string
 }
 
 export interface AppState {
@@ -72,6 +68,7 @@ export interface AppState {
   battles: Map<number, BattleHeader>
   lastUpdated: number
   users: Map<string, User>
+  news: NewsItem[]
 }
 
 export interface StateUpdate {

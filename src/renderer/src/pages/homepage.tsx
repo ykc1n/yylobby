@@ -1,9 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import { useThemeStore, themeColors } from '../themeStore'
+import { useNews } from '../store/appStore'
 
 export default function HomePage(): JSX.Element {
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
+  const news = useNews()
 
   return (
     <div className="min-h-[calc(100vh-52px)] p-6">
@@ -103,16 +105,30 @@ export default function HomePage(): JSX.Element {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <NewsCard
-                title="Welcome to Zero-K Lobby"
-                date="Just now"
-                description="Your new command center for all Zero-K battles."
-              />
-              <NewsCard
-                title="Getting Started"
-                date="Tips"
-                description="Use the navigation above to explore different sections."
-              />
+              {news.length > 0 ? (
+                news.slice(0, 6).map((item, index) => (
+                  <NewsCard
+                    key={index}
+                    title={item.Header}
+                    date={formatNewsDate(item.Time)}
+                    description={item.Text}
+                    url={item.Url}
+                  />
+                ))
+              ) : (
+                <>
+                  <NewsCard
+                    title="Welcome to Zero-K Lobby"
+                    date="Just now"
+                    description="Your new command center for all Zero-K battles."
+                  />
+                  <NewsCard
+                    title="Getting Started"
+                    date="Tips"
+                    description="Use the navigation above to explore different sections."
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -130,14 +146,42 @@ function StatCard({ label, value }: { label: string; value: string }): JSX.Eleme
   )
 }
 
-function NewsCard({ title, date, description }: { title: string; date: string; description: string }): JSX.Element {
-  return (
+function formatNewsDate(dateString: string): string {
+  if (!dateString) return ''
+  try {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  } catch {
+    return dateString
+  }
+}
+
+function NewsCard({ title, date, description, url }: { title: string; date: string; description: string; url?: string }): JSX.Element {
+  const content = (
     <div className="relative p-4 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-200 cursor-pointer">
       <div className="flex items-start justify-between mb-2">
-        <h3 className="text-sm font-normal tracking-wide text-white">{title}</h3>
-        <span className="text-xs text-neutral-500 tracking-wide px-2 py-0.5 bg-white/[0.04] rounded">{date}</span>
+        <h3 className="text-sm font-normal tracking-wide text-white line-clamp-1">{title}</h3>
+        <span className="text-xs text-neutral-500 tracking-wide px-2 py-0.5 bg-white/[0.04] rounded flex-shrink-0 ml-2">{date}</span>
       </div>
-      <p className="text-sm text-neutral-400 tracking-wide leading-relaxed">{description}</p>
+      <p className="text-sm text-neutral-400 tracking-wide leading-relaxed line-clamp-2">{description}</p>
     </div>
   )
+
+  if (url) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    )
+  }
+
+  return content
 }

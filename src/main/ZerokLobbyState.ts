@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate, ChatMessage } from './types/AppState'
+import type { AppState, ConnectionStatus, ChannelData, BattleData, StateUpdate, ChatMessage, NewsItem } from './types/AppState'
 import { BattleHeader, User } from './commands'
 
 const MAX_MESSAGES_PER_CHANNEL = 200
@@ -35,6 +35,7 @@ export class ZerokLobbyState extends EventEmitter {
       battles: new Map(),
       lastUpdated: Date.now(),
       users: new Map(),
+      news: [],
     }
   }
 
@@ -71,6 +72,15 @@ export class ZerokLobbyState extends EventEmitter {
     this.state = {
       ...this.state,
       lobby: { ...this.state.lobby, ...lobby },
+      lastUpdated: Date.now()
+    }
+    this.emitStateChange()
+  }
+
+  updateNews(newsItems: NewsItem[]): void {
+    this.state = {
+      ...this.state,
+      news: newsItems,
       lastUpdated: Date.now()
     }
     this.emitStateChange()
