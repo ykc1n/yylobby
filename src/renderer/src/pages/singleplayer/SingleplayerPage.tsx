@@ -2,7 +2,7 @@ import ReplaysVeiw from "./ReplaysView"
 import SkirmishVeiw from "./SkirmishView"
 import CampaignView from "./CampaignView"
 import { Routes, Route, NavLink, Navigate } from "react-router-dom"
-import { useThemeStore, themeColors } from "./themeStore"
+import { useThemeStore, themeColors } from "../../themeStore"
 
 export default function SingleplayerPage(): JSX.Element {
   const themeColor = useThemeStore((state) => state.themeColor)

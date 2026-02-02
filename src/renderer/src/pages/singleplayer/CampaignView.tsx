@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { useThemeStore, themeColors } from './themeStore'
+import { useThemeStore, themeColors } from '../../themeStore'
 
 interface Mission {
   id: string
@@ -198,12 +197,12 @@ export default function CampaignView(): JSX.Element {
                   </div>
                 </div>
 
-                <Button className={`w-full py-5 font-semibold ${theme.bg} ${theme.bgHover} ${theme.shadow} ${theme.shadowHover} transition-all duration-300`}>
+                <button className={`w-full py-5 font-semibold rounded-lg text-white ${theme.bg} ${theme.bgHover} transition-all duration-300 flex items-center justify-center`}>
                   <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   </svg>
                   {selectedMission.status === 'completed' ? 'Replay Mission' : 'Start Mission'}
-                </Button>
+                </button>
               </div>
             ) : (
               <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-8 text-center">

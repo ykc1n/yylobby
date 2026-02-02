@@ -2,7 +2,7 @@ import { useState } from 'react'
 import BattleList from './BattleList'
 import BattleRoom from './BattleRoom'
 import LobbySidebar from './LobbySidebar'
-import { useThemeStore, themeColors } from './themeStore'
+import { useThemeStore, themeColors } from '../../themeStore'
 
 // Hexagon grid pattern for matchmaking container
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(

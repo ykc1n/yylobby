@@ -1,6 +1,6 @@
 import { useState, useMemo, act } from 'react'
-import { useThemeStore, themeColors } from './themeStore'
-import { useActiveChannel, useActiveChannelData } from './store/appStore'
+import { useThemeStore, themeColors } from '../../themeStore'
+import { useActiveChannel, useActiveChannelData } from '../../store/appStore'
 
 export function PlayerListPanel(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('')

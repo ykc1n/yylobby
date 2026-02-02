@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useThemeStore, themeColors } from './themeStore'
-import { useChannels, useActiveChannel, useActiveChannelData, useUsers} from './store/appStore'
-import { useActions } from './hooks/useActions'
-import rankImage from './assets/rankImagesLarge/0_0.png'
+import { useThemeStore, themeColors } from '../../themeStore'
+import { useChannels, useActiveChannel, useActiveChannelData, useUsers} from '../../store/appStore'
+import { useActions } from '../../hooks/useActions'
+import rankImage from '../../assets/rankImagesLarge/0_0.png'
 
 function formatTime(isoString: string): string {
   try {

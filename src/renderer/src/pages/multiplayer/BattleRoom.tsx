@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useThemeStore, themeColors } from './themeStore'
+import { useThemeStore, themeColors } from '../../themeStore'
 
 interface Player {
   id: string

@@ -1,5 +1,6 @@
 
-## General
+# General
+## Resources
 - [ ] Resource downloading
      - [ ] Download maps, handle when maps cant be found or downloaded
      - [ ] Download mods
@@ -13,7 +14,8 @@
     -  might be able to set custom sources?
     -  customize where resources are downloaded from, and where they are checked? so that for example you can look both in your BAR directory, and your ZK directory for a certain map?
 
-
+## Infra
+- [ ] Should probably share types from the main process into the renderer process
 
 
 # Multiplayer
@@ -83,7 +85,11 @@ note, shares a little bit with battleroom. skirmishes are basically just a singl
 
 # User / Release
 
+notes:
+ getting resource downloading done, as well as making skirmish work is probably a MVP to make some sort of release (if anything, to just *test* releasing)
+
 ## User related stuff
+- [ ] Persistent configs
 - [ ] Actually setup a user directory
 - [ ] Check all the directories work as expected
     - [ ] Need to make sure required directories are accounted for in some sort of wizard or settings menu

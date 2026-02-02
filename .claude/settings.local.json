@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npm install)",
       "Bash(npm run typecheck:*)",
-      "Bash(npm run typecheck:web:*)"
+      "Bash(npm run typecheck:web:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(timeout 12 npm run dev:*)"
     ]
   }
 }

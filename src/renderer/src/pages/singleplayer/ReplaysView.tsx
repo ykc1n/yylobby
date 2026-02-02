@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import {trpc} from '../utils/trpc'
-import { useThemeStore, themeColors } from './themeStore'
+import {trpc} from '../../../utils/trpc'
+import { useThemeStore, themeColors } from '../../themeStore'
 
 // Hexagon grid pattern - proper honeycomb tiling
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useThemeStore, themeColors } from './themeStore'
-import { useBattles } from './store/appStore'
+import { useThemeStore, themeColors } from '../../themeStore'
+import { useBattles } from '../../store/appStore'
 
 
 
