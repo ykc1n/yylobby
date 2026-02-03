@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { app } from 'electron'
 import { DemoParser } from 'sdfz-demo-parser'
+import type { SettingsManager } from './settings'
 
 interface ParsedReplay {
     filename: string
@@ -24,21 +25,32 @@ interface ReplayCache {
 const CACHE_VERSION = 1
 
 export class ReplayManager {
-    baseReplayPath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/demos'
+    private settingsManager: SettingsManager
     private cachePath: string
     private cache: ReplayCache = { version: CACHE_VERSION, replays: {} }
-    private replayFiles: Array<{ filename: string; mtime: number }> = []
+    private replayFiles: Array<{ filename: string; mtime: number; directory: string }> = []
     private parser = new DemoParser()
     private isInitialized = false
     private initPromise: Promise<void> | null = null
 
-    constructor() {
+    constructor(settingsManager: SettingsManager) {
+        this.settingsManager = settingsManager
+
         // Use app.getPath for proper user data location
         const userDataPath = app.getPath('userData')
         this.cachePath = path.join(userDataPath, 'replay-cache.json')
 
         // Start initialization in background
         this.initPromise = this.initialize()
+    }
+
+    getBaseReplayPath(): string {
+        return path.join(this.settingsManager.getZeroKDirectory(), 'demos')
+    }
+
+    refreshPaths(): void {
+        // Re-scan replay directories when settings change
+        this.scanReplayDirectory()
     }
 
     private async initialize(): Promise<void> {
@@ -79,32 +91,41 @@ export class ReplayManager {
     }
 
     private async scanReplayDirectory(): Promise<void> {
-        if (!fs.existsSync(this.baseReplayPath)) {
-            console.log('[ReplayManager] Replay directory not found:', this.baseReplayPath)
-            return
+        const replayDirs = this.settingsManager.getReplayDirectories()
+        this.replayFiles = []
+
+        for (const replayDir of replayDirs) {
+            if (!fs.existsSync(replayDir)) {
+                console.log('[ReplayManager] Replay directory not found:', replayDir)
+                continue
+            }
+
+            try {
+                const files = fs.readdirSync(replayDir)
+
+                // Get file stats in one pass and filter for .sdfz files
+                const dirFiles = files
+                    .filter(filename => filename.endsWith('.sdfz'))
+                    .map(filename => {
+                        try {
+                            const stat = fs.statSync(path.join(replayDir, filename))
+                            return { filename, mtime: stat.mtimeMs, directory: replayDir }
+                        } catch {
+                            return null
+                        }
+                    })
+                    .filter((item): item is { filename: string; mtime: number; directory: string } => item !== null)
+
+                this.replayFiles.push(...dirFiles)
+                console.log(`[ReplayManager] Found ${dirFiles.length} replay files in ${replayDir}`)
+            } catch (error) {
+                console.error('[ReplayManager] Failed to scan directory:', replayDir, error)
+            }
         }
 
-        try {
-            const files = fs.readdirSync(this.baseReplayPath)
-
-            // Get file stats in one pass and filter for .sdfz files
-            this.replayFiles = files
-                .filter(filename => filename.endsWith('.sdfz'))
-                .map(filename => {
-                    try {
-                        const stat = fs.statSync(path.join(this.baseReplayPath, filename))
-                        return { filename, mtime: stat.mtimeMs }
-                    } catch {
-                        return null
-                    }
-                })
-                .filter((item): item is { filename: string; mtime: number } => item !== null)
-                .sort((a, b) => b.mtime - a.mtime)  // Sort by most recent first
-
-            console.log(`[ReplayManager] Found ${this.replayFiles.length} replay files`)
-        } catch (error) {
-            console.error('[ReplayManager] Failed to scan directory:', error)
-        }
+        // Sort all files by most recent first
+        this.replayFiles.sort((a, b) => b.mtime - a.mtime)
+        console.log(`[ReplayManager] Total ${this.replayFiles.length} replay files`)
     }
 
     setGame(game: 'zerok' | 'bar'): void {
@@ -123,11 +144,11 @@ export class ReplayManager {
         const filesToProcess = this.replayFiles.slice(0, pageSize)
 
         const results: ParsedReplay[] = []
-        const needsParsing: Array<{ filename: string; mtime: number; index: number }> = []
+        const needsParsing: Array<{ filename: string; mtime: number; directory: string; index: number }> = []
 
         // Check which replays are already cached and still valid
         for (let i = 0; i < filesToProcess.length; i++) {
-            const { filename, mtime } = filesToProcess[i]
+            const { filename, mtime, directory } = filesToProcess[i]
             const cached = this.cache.replays[filename]
 
             if (cached && cached.cachedAt >= mtime) {
@@ -135,7 +156,7 @@ export class ReplayManager {
                 results[i] = cached
             } else {
                 // Needs parsing
-                needsParsing.push({ filename, mtime, index: i })
+                needsParsing.push({ filename, mtime, directory, index: i })
             }
         }
 
@@ -144,8 +165,8 @@ export class ReplayManager {
         // Parse any uncached replays in parallel
         if (needsParsing.length > 0) {
             const parseResults = await Promise.allSettled(
-                needsParsing.map(({ filename }) =>
-                    this.parser.parseDemo(path.join(this.baseReplayPath, filename))
+                needsParsing.map(({ filename, directory }) =>
+                    this.parser.parseDemo(path.join(directory, filename))
                 )
             )
 

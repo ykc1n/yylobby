@@ -88,14 +88,60 @@ export const appRouter = t.router({
     .input(z.object({ filename: z.string() }))
     .mutation(async (opts) => {
       try {
-        const replayPath = opts.ctx.replayManager.baseReplayPath
+        const replayPath = opts.ctx.replayManager.getBaseReplayPath()
         const fullPath = path.join(replayPath, opts.input.filename)
         await opts.ctx.zk_launcher.start_replay(fullPath)
       } catch (error) {
         console.error('Error in openReplay:', error)
         throw error
       }
+    }),
+
+  // Settings endpoints
+  getSettings: t.procedure.query((opts) => {
+    return opts.ctx.settingsManager.getSettings()
+  }),
+
+  setZeroKDirectory: t.procedure
+    .input(z.object({ directory: z.string() }))
+    .mutation((opts) => {
+      opts.ctx.settingsManager.setZeroKDirectory(opts.input.directory)
+      // Refresh replay manager with new path
+      opts.ctx.replayManager.refreshPaths()
+      return { success: true }
+    }),
+
+  getReplayDirectories: t.procedure.query((opts) => {
+    return opts.ctx.settingsManager.getReplayDirectories()
+  }),
+
+  addReplayDirectory: t.procedure
+    .input(z.object({ directory: z.string() }))
+    .mutation((opts) => {
+      opts.ctx.settingsManager.addReplayDirectory(opts.input.directory)
+      opts.ctx.replayManager.refreshPaths()
+      return { success: true }
+    }),
+
+  removeReplayDirectory: t.procedure
+    .input(z.object({ directory: z.string() }))
+    .mutation((opts) => {
+      opts.ctx.settingsManager.removeReplayDirectory(opts.input.directory)
+      opts.ctx.replayManager.refreshPaths()
+      return { success: true }
+    }),
+
+  // Browse for directory (opens native dialog)
+  browseForDirectory: t.procedure.mutation(async () => {
+    const { dialog } = await import('electron')
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory']
     })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { canceled: true, path: null }
+    }
+    return { canceled: false, path: result.filePaths[0] }
+  })
 })
 
 export type AppRouter = typeof appRouter

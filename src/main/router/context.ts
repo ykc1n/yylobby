@@ -1,9 +1,10 @@
 import { BrowserWindow } from 'electron'
-import { lobbyState, lobbyInterface, replayManager, zk_launcher } from '../index'
+import { lobbyState, lobbyInterface, replayManager, zk_launcher, settingsManager } from '../index'
 import type { ZerokLobbyState } from '../ZerokLobbyState'
 import type ZerokLobbyInterface from '../ZerokLobbyInterface'
 import type { ReplayManager } from '../local/replays'
 import type { ZkLauncher } from '../local/zk_launcher'
+import type { SettingsManager } from '../local/settings'
 
 export interface Context {
   windowId: number | null
@@ -11,6 +12,7 @@ export interface Context {
   lobbyInterface: ZerokLobbyInterface
   replayManager: ReplayManager
   zk_launcher: ZkLauncher
+  settingsManager: SettingsManager
 }
 
 export const createContext = async ({
@@ -21,5 +23,5 @@ export const createContext = async ({
   const window = BrowserWindow.fromWebContents(event.sender)
   const windowId = window?.id ?? null
 
-  return { windowId, lobbyState, lobbyInterface, replayManager, zk_launcher }
+  return { windowId, lobbyState, lobbyInterface, replayManager, zk_launcher, settingsManager }
 }

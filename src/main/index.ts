@@ -8,15 +8,17 @@ import ZerokLobbyInterface from './ZerokLobbyInterface'
 import { attachWindow } from './ipc_setup'
 import { ReplayManager } from './local/replays'
 import { ZkLauncher } from './local/zk_launcher'
+import { SettingsManager } from './local/settings'
 
 console.log('[Main] Starting application')
 
 // Create singleton instances - these exist for the lifetime of the app
+export const settingsManager = new SettingsManager()
 export const lobbyState = new ZerokLobbyState()
 export const connection = new ZerokConnection()
 export const lobbyInterface = new ZerokLobbyInterface(connection, lobbyState)
-export const replayManager = new ReplayManager()
-export const zk_launcher = new ZkLauncher()
+export const replayManager = new ReplayManager(settingsManager)
+export const zk_launcher = new ZkLauncher(settingsManager)
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

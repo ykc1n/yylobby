@@ -3,23 +3,35 @@ import path from 'node:path'
 import {DemoParser} from "sdfz-demo-parser";
 import {parse} from 'lua-json';
 import { spawn } from 'node:child_process';
+import type { SettingsManager } from './settings'
 
 //this code is heavily inspired by the BAR debug launcher: https://github.com/beyond-all-reason/bar_debug_launcher
 
 
 /*
 TODO:
- 
-*/ 
+
+*/
 export class ZkLauncher{
-    basePath = 'C:/Program Files (x86)/Steam/steamapps/common/Zero-K/'
-    baseEngineFolder = path.join(this.basePath, 'engine')
+    private settingsManager: SettingsManager
     platform = "win64"
     engine_binary = "spring"
     engines = new Map()
     maps = new Map()
     menus = new Map()
     games = new Map()
+
+    constructor(settingsManager: SettingsManager) {
+        this.settingsManager = settingsManager
+    }
+
+    get basePath(): string {
+        return this.settingsManager.getZeroKDirectory()
+    }
+
+    get baseEngineFolder(): string {
+        return path.join(this.basePath, 'engine')
+    }
 
     setGame(game: 'zerok' | 'bar'): void {
         // Game-specific path will be set from settings
