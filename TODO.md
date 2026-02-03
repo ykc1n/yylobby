@@ -1,5 +1,12 @@
 
 # General
+
+## UI
+- [ ] De-slopify the main menu..
+- [ ] Find some good backgrounds
+    - maybe moving backgrounds could work?
+
+
 ## Resources
 - [ ] Resource downloading
      - [ ] Download maps, handle when maps cant be found or downloaded
