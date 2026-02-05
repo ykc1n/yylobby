@@ -231,7 +231,9 @@ class ZkTerminalClient {
     console.log('  \x1b[33m/raw <cmd> <json>\x1b[0m- Send raw command')
     console.log('  \x1b[33m/ping\x1b[0m            - Send ping')
     console.log('  \x1b[33m/quit\x1b[0m            - Disconnect and exit')
+    console.log('  \x1b[33m/testDownload\x1b[0m   - Test file download request')
     console.log('\x1b[36m═══════════════════════════════════════════════════════════════\x1b[0m\n')
+  
 
     this.rl.setPrompt('\x1b[34mzk>\x1b[0m ')
     this.rl.prompt()
@@ -276,6 +278,10 @@ class ZkTerminalClient {
             console.log('\x1b[33mUsage: /say <message>\x1b[0m')
           }
           break
+
+        case 'test_download':
+        this.send('DownloadFile',{Name:"Sands of Time v1.0", FileType:"MAP" })
+        break
 
         case 'ping':
           this.send('Ping', {})

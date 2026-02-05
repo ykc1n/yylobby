@@ -121,3 +121,7 @@ notes:
 
 How does resource loading work?
     - Connect to wrapper
+    using the PR downloader seems to be a common approach for BAR applications
+
+    wait i think i literally just send messages to the server
+    https://github.com/ZeroK-RTS/Zero-K-Infrastructure/blob/b8ad3b704a7adcedf3ab59b029b812eab7a0679d/ChobbyLauncher/ChobbyLoopbackMessages.cs#L69

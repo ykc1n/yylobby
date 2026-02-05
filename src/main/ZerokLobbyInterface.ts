@@ -275,6 +275,7 @@ export default class ZerokLobbyInterface {
     })
   }
 
+
   setActiveChannel(channelName: string): void {
     this.lobbyState.setActiveChannel(channelName)
   }

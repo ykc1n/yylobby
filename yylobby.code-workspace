@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../bar_debug_launcher"
+		},
+		{
+			"path": "../../../../Program Files (x86)/Steam/steamapps/common/Zero-K/games/therxlobby.sdd"
+		}
+	],
+	"settings": {}
+}
