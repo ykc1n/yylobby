@@ -125,3 +125,9 @@ How does resource loading work?
 
     wait i think i literally just send messages to the server
     https://github.com/ZeroK-RTS/Zero-K-Infrastructure/blob/b8ad3b704a7adcedf3ab59b029b812eab7a0679d/ChobbyLauncher/ChobbyLoopbackMessages.cs#L69
+
+
+    Honestly Im not even sure if `DownloadFile` even works. I get an error when I run the command in the testlobby
+
+
+    WTF is VFS.DownloadArchive
