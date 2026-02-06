@@ -2,7 +2,7 @@
 # General
 
 ## UI
-- [ ] De-slopify the main menu..
+- [x] De-slopify the main menu..
 - [ ] Find some good backgrounds
     - maybe moving backgrounds could work?
 
