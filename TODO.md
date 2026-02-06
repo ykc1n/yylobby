@@ -131,3 +131,11 @@ How does resource loading work?
 
 
     WTF is VFS.DownloadArchive
+
+
+    OHHH
+    ZK / Chobby.exe is a *commpiled c# program*
+    its running ChobbyLauncher *locally*
+    half of the stuff in Zero-K-Infrastructure is actually *local*
+    AKA
+    I can just write my own ZerokDownloader.ts
