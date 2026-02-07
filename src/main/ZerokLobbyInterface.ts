@@ -3,6 +3,7 @@ import type ZerokConnection from './ZerokConnection'
 import type { ZerokLobbyState } from './ZerokLobbyState'
 import { BattleData, ChatPlace, NewsItem } from './types/AppState'
 import {BattleHeader, User } from './commands'
+
 interface LoginResponse {
   ResultCode: number
   Name?: string

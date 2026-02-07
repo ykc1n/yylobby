@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useThemeStore, themeColors } from '../themeStore'
 import { useNews } from '../store/appStore'
+import { useActions } from '@renderer/hooks/useActions'
 
 // Hexagon grid pattern - proper honeycomb tiling
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
@@ -15,6 +16,7 @@ export default function HomePage(): JSX.Element {
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
   const news = useNews()
+  const { testDownload } = useActions()
 
   return (
     <div className="min-h-[calc(100vh-52px)] grid grid-cols-3 grid-rows-6  p-6">
@@ -53,7 +55,12 @@ export default function HomePage(): JSX.Element {
               <div className="flex-1 h-px bg-gradient-to-r from-white/[0.1] to-transparent" />
             </div>
             
-            
+            <div>
+              TESTING 
+              <button onClick={testDownload} className="ml-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
+                Test Download
+              </button>
+            </div>
 
             <div className="relative grid grid-cols-2 gap-5">
               {news.length > 0 ? (

@@ -139,3 +139,11 @@ How does resource loading work?
     half of the stuff in Zero-K-Infrastructure is actually *local*
     AKA
     I can just write my own ZerokDownloader.ts
+
+
+
+    OK so i think i gotta look in plasmadownloader
+
+    So step 1 seems to be using the plasmaservice to get information about the resource
+    
+    What is the task factory stuff?

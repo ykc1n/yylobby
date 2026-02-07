@@ -130,6 +130,10 @@ export const appRouter = t.router({
       opts.ctx.replayManager.refreshPaths()
       return { success: true }
     }),
+  testDownload: t.procedure.mutation(async (opts) => {
+    opts.ctx.zerokDownloader.testDownload()
+    return { success: true }
+  }),
 
   // Browse for directory (opens native dialog)
   browseForDirectory: t.procedure.mutation(async () => {

@@ -9,6 +9,7 @@ export function useActions() {
   const joinChannelMutation = trpc.joinChannel.useMutation()
   const sendMessageMutation = trpc.sendMessage.useMutation()
   const setActiveChannelMutation = trpc.setActiveChannel.useMutation()
+  const testDownloadMutation = trpc.testDownload.useMutation()
 
   return {
     // Connection
@@ -32,6 +33,10 @@ export function useActions() {
     isSendingMessage: sendMessageMutation.isPending,
 
     setActiveChannel: (channelName: string) =>
-      setActiveChannelMutation.mutate({ channelName })
+      setActiveChannelMutation.mutate({ channelName }),
+
+    testDownload: (() => testDownloadMutation.mutate())
+
+
   }
 }
