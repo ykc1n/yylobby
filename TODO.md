@@ -147,3 +147,16 @@ How does resource loading work?
     So step 1 seems to be using the plasmaservice to get information about the resource
     
     What is the task factory stuff?
+
+    OK i think i understand now
+
+    - Send commands in the zk protocol through http to zero-k.info/ContentServer
+        - send DownloadFile command to receive information from zk about where the resource is hosted
+    - I guess i can use the links received to just download the file to my machine
+
+
+Next questions: 
+- How can i tell the progress of a download?
+
+- How do i manage multiple downloads at once?
+

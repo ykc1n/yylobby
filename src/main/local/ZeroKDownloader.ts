@@ -4,31 +4,31 @@ interface DownloadRequest {
     InternalName: string;
 }
 
+interface DownloadFileResponse{
+    links: string[];
+    torrent: string;
+    dependencies: string[];
+    resourceType: string;
+    torrentName: string;
+}
+
 export class ZerokDownloader {
     downloads = [];
     PlasmaService = "https://zero-k.info/contentService";
-     testDownload():void{
-        const request: DownloadRequest = {
-            InternalName: "Sands of Time v1.0"
-        }
-
-        const writer = fs.createWriteStream("Sands of Time v1.0");
-        
-        axios.post(this.PlasmaService,`DownloadFileRequest ${JSON.stringify(request)}\n`,{responseType: "stream"})
-            .then(response => {
-                console.log("Download successful:", response.data);
-                response.data.pipe(writer);
-                writer.on("finish", () => {
-                    console.log("File saved successfully.");
-                });
-                writer.on("error", (err) => {
-                    console.error("Error writing file:", err);
-                });
-            })
+     async DownloadFileRequest(name: string): Promise<null | DownloadFileResponse> {
+      const response = await axios.post(this.PlasmaService,`DownloadFileRequest ${JSON.stringify({InternalName: name})}\n`,{responseType: "stream"})
             .catch(error => {
                 console.error("Error downloading:", error);
             });
+        if(!response || !response.data) return null;
+        console.log(response)
+        return response.data as DownloadFileResponse;
     }
+
+    testDownload():void {
+        this.DownloadFileRequest("maps/zk_map_asteroid_belt.sdz")
+    }
+
 
     constructor() {
         console.log("ZerokDownloader initialized");
