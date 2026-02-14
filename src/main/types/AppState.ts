@@ -11,7 +11,11 @@ export enum ChatPlace {
   User = 4,  // Private message
   Server = 5
 }
-
+//hmmmm idk if this should perfectly model the archivecache..
+export interface MapArchiveEntry {
+  name: string;
+  path: string;
+}
 
 
 export interface ChatMessage {

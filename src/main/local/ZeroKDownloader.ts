@@ -13,6 +13,8 @@ interface DownloadFileResponse{
     torrentName: string;
 }
 
+
+
 export class ZerokDownloader {
     downloads = [];
     PlasmaService = "https://zero-k.info/contentService";
@@ -37,7 +39,6 @@ export class ZerokDownloader {
        if(!response.data) return
        const writer = fs.createWriteStream(`${name}.sd7`)
        response.data.pipe(writer)
-
     }
 
 

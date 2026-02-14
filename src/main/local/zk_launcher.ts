@@ -53,7 +53,7 @@ export class ZkLauncher{
             console.log("no engines found!")
         }
     }
-
+    //this just parses the lua cache
     parseCache():void{
         let cachefiles:string[] = []
         const cacheDir = path.join(this.basePath, 'cache')
