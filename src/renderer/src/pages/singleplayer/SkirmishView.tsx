@@ -1,234 +1,326 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
 
-interface AIPlayer {
-  id: number
+interface Player {
+  id: string
   name: string
-  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Brutal'
-  team: number
+  isHost: boolean
 }
 
-const MAPS = [
-  { id: 'speedmetal', name: 'Speed Metal', players: '2-8', size: 'Medium' },
-  { id: 'comet', name: 'Comet Catcher', players: '2-4', size: 'Small' },
-  { id: 'stronghold', name: 'Stronghold', players: '2-6', size: 'Large' },
-  { id: 'quicksilver', name: 'Quicksilver', players: '2-4', size: 'Medium' },
-  { id: 'tundra', name: 'Tundra', players: '2-8', size: 'Large' },
-  { id: 'nuclear', name: 'Nuclear Winter', players: '2-4', size: 'Small' },
+interface Team {
+  id: number
+  name: string
+  players: Player[]
+}
+
+interface ChatMessage {
+  id: string
+  user: string
+  text: string
+  time: string
+}
+
+// Mock data for the battleroom - 4v4v4v4
+const MOCK_TEAMS: Team[] = [
+  {
+    id: 1,
+    name: 'Team 1',
+    players: [
+      { id: '1', name: 'Commander_Alpha', isHost: true },
+      { id: '2', name: 'IronForge', isHost: false },
+      { id: '3', name: 'NovaPilot', isHost: false },
+      { id: '4', name: 'Striker', isHost: false },
+    ]
+  },
+  {
+    id: 2,
+    name: 'Team 2',
+    players: [
+      { id: '5', name: 'SteelBrigade', isHost: false },
+      { id: '6', name: 'MechWarrior', isHost: false },
+      { id: '7', name: 'Phoenix', isHost: false },
+    ]
+  },
+  {
+    id: 3,
+    name: 'Team 3',
+    players: [
+      { id: '8', name: 'Vanguard', isHost: false },
+      { id: '9', name: 'Titan', isHost: false },
+    ]
+  },
+  {
+    id: 4,
+    name: 'Team 4',
+    players: [
+      { id: '10', name: 'Reaper', isHost: false },
+      { id: '11', name: 'Ghost', isHost: false },
+      { id: '12', name: 'Shadow', isHost: false },
+      { id: '13', name: 'Blade', isHost: false },
+    ]
+  }
 ]
 
-const DIFFICULTIES = ['Easy', 'Medium', 'Hard', 'Brutal'] as const
+const MOCK_MESSAGES: ChatMessage[] = [
+  { id: '1', user: 'Commander_Alpha', text: 'Welcome to the battle!', time: new Date().toISOString() },
+  { id: '2', user: 'IronForge', text: 'Ready when you are', time: new Date().toISOString() },
+  { id: '3', user: 'SteelBrigade', text: 'glhf', time: new Date().toISOString() },
+]
 
-export default function SkirmishVeiw(): JSX.Element {
-  const [selectedMap, setSelectedMap] = useState(MAPS[0].id)
-  const [aiPlayers, setAiPlayers] = useState<AIPlayer[]>([
-    { id: 1, name: 'AI Commander', difficulty: 'Medium', team: 2 }
-  ])
-  const themeColor = useThemeStore((state) => state.themeColor)
-  const theme = themeColors[themeColor]
+function formatTime(isoString: string): string {
+  try {
+    const date = new Date(isoString)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
 
-  const addAI = (): void => {
-    if (aiPlayers.length < 7) {
-      setAiPlayers([...aiPlayers, {
-        id: Date.now(),
-        name: `AI Commander ${aiPlayers.length + 1}`,
-        difficulty: 'Medium',
-        team: 2
-      }])
+/*
+TODO: 
+- add yes no vote component
+- add a map vote component
+   what other votes are there?
+- finish spec list
+
+*/
+
+
+function YesNoVote(): JSX.Element {
+  const votes = {
+    yes: 0,
+    no: 0
+  }
+
+  return (
+      <div>
+        <div className="grid grid-cols-6 mb-2">
+        <button className="p-4 border col-start-2 col-span-1 border-white/[0.1] rounded-lg text-sm text-white bg-green-400/[.3] hover:bg-green-400/[0.05] transition-all">
+          Yes
+          </button>
+          <button className="p-4 border col-start-5  border-white/[0.1] rounded-lg text-sm text-white bg-red-400/[.3] hover:bg-red-400/[0.1] transition-all">
+          No
+          </button>  
+        </div>
+
+        <div className="grid grid-cols-6">
+          <div className="bg-green-400 p-1"></div>
+        </div>
+      </div>
+  )
+}
+
+function TeamBox({ team, theme }: { team: Team; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
+  return (
+    <div className="flex-1 border border-white/[0.08] rounded-lg p-2   min-w-0 flex flex-col">
+      <div className="flex items-center justify-between mb-3 px-1 border-b">
+        <h3 className="text-lg font-medium tracking-wide text-neutral-300">{team.name}</h3>
+        <span className="text-xs text-neutral-600">{team.players.length}/4</span>
+      </div>
+
+      <div className="flex-1">
+        {team.players.map((player) => (
+          <div
+            key={player.id}
+            className={`flex items-center gap-2 px-3 `}
+          >
+            <span className={`text-sm text-neutral-300 truncate ${player.isHost ? 'text-yellow-200' : 'text-neutral-300'}`}>{player.name}</span>
+          </div>
+        ))}
+
+        {/* Empty slots */}
+        {Array.from({ length: Math.max(0, 4 - team.players.length) }).map((_, i) => (
+          <div key={`empty-${i}`} className="px-3 py-2 border border-dashed border-white/[0.06] rounded-lg text-neutral-700 text-sm text-center">
+            Empty
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
+  const [inputValue, setInputValue] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages.length])
+
+  const handleSend = (): void => {
+    if (inputValue.trim()) {
+      console.log('Send message:', inputValue)
+      setInputValue('')
     }
   }
 
-  const removeAI = (id: number): void => {
-    setAiPlayers(aiPlayers.filter(ai => ai.id !== id))
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
   }
-
-  const updateAIDifficulty = (id: number, difficulty: AIPlayer['difficulty']): void => {
-    setAiPlayers(aiPlayers.map(ai =>
-      ai.id === id ? { ...ai, difficulty } : ai
-    ))
-  }
-
-  const updateAITeam = (id: number, team: number): void => {
-    setAiPlayers(aiPlayers.map(ai =>
-      ai.id === id ? { ...ai, team } : ai
-    ))
-  }
-
-  const selectedMapData = MAPS.find(m => m.id === selectedMap)
 
   return (
-    <div className="h-[calc(100vh-100px)] p-6 overflow-auto">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">Skirmish Setup</h1>
-          <p className="text-neutral-500">Configure your battle against AI opponents</p>
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-3 border-b border-white/[0.06]">
+        <h3 className="text-sm font-normal text-neutral-300 tracking-[0.1em] uppercase">Battle Chat</h3>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.map((msg) => (
+          <div key={msg.id} className="group">
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className={`text-sm font-normal tracking-wide ${theme.text}`}>{msg.user}</span>
+              <span className="text-[10px] text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                {formatTime(msg.time)}
+              </span>
+            </div>
+            <p className="text-sm text-neutral-400 leading-relaxed break-words">{msg.text}</p>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      {/* yes no vote */}
+      <div className="p-3 border-t border-white/[0.06]">
+      <YesNoVote />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-white/[0.12] transition-colors"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function BattleRoom(): JSX.Element {
+  const themeColor = useThemeStore((state) => state.themeColor)
+  const theme = themeColors[themeColor]
+  const [isReady, setIsReady] = useState(false)
+
+  const battleInfo = {
+    title: 'FFA 4v4v4v4 - All Welcome',
+    map: 'Speed Metal',
+    host: 'Commander_Alpha',
+    maxPlayers: 16,
+    currentPlayers: 13,
+  }
+
+  return (
+    <div className="h-full flex gap-3">
+      {/* Left Half: Teams Section */}
+      <div className="flex-1 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-4 shadow-xl shadow-black/30 flex flex-col">
+        {/* Battle Header */}
+        <div className="mb-4 pb-3 border-b border-white/[0.06]">
+          <h2 className="text-base font-normal tracking-wide text-white mb-1">{battleInfo.title}</h2>
+          <div className="flex items-center gap-3 text-xs text-neutral-500">
+            <span>Host: <span className={theme.text}>{battleInfo.host}</span></span>
+            <span className="w-1 h-1 bg-neutral-600 rounded-full" />
+            <span>{battleInfo.currentPlayers}/{battleInfo.maxPlayers} Players</span>
+          </div>
+        </div>
+        <div className="flex-1 grid grid-cols-5 gap-3 min-h-0">
+
+        <div>
+          <div className='p-3 border border-white/[0.06]'>
+            <h3 className="text-lg font-medium tracking-wide text-neutral-300 mb-2 border-b">Spectators</h3>
+
+          </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* Map Selection */}
-          <div className="col-span-2 space-y-4">
-            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
-              <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Select Map</h2>
+        {/* Teams Grid - 2x2 */}
+        <div className="flex-1 col-span-4 flexgap-3 min-h-0 overflow-auto space-y-4">
+          {MOCK_TEAMS.map((team) => (
+            <TeamBox key={team.id} team={team} theme={theme} />
+          ))}
+        </div>        
+        
+        </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                {MAPS.map(map => (
-                  <button
-                    key={map.id}
-                    onClick={() => setSelectedMap(map.id)}
-                    className={`relative p-4 rounded-lg border transition-all duration-300 text-left
-                      ${selectedMap === map.id
-                        ? `${theme.border} ${theme.bgSubtle}`
-                        : 'border-neutral-800 bg-neutral-900/50 hover:border-neutral-700'
-                      }`}
-                  >
-                    {selectedMap === map.id && (
-                      <div
-                        className={`absolute top-2 right-2 w-2 h-2 ${theme.bg} rounded-full`}
-                        style={{ boxShadow: `0 0 6px rgba(${theme.rgb}, 0.5)` }}
-                      />
-                    )}
-                    <div className="aspect-video bg-neutral-800/50 rounded mb-3 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                    </div>
-                    <div className="font-medium text-white text-sm">{map.name}</div>
-                    <div className="text-xs text-neutral-500 mt-1">{map.players} players • {map.size}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Game Settings */}
-            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
-              <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Game Settings</h2>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-2">Starting Resources</label>
-                  <select className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/40">
-                    <option>Normal</option>
-                    <option>Low</option>
-                    <option>High</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-2">Game Speed</label>
-                  <select className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500/40">
-                    <option>Normal (1x)</option>
-                    <option>Fast (1.5x)</option>
-                    <option>Very Fast (2x)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Players Panel */}
-          <div className="space-y-4">
-            {/* You */}
-            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
-              <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider mb-4">Your Team</h2>
-
-              <div className={`p-3 ${theme.bgSubtle} border ${theme.border} rounded-lg`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${theme.bgSubtle} rounded-lg flex items-center justify-center`}>
-                    <svg className={`w-5 h-5 ${theme.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="font-medium text-white text-sm">You</div>
-                    <div className={`text-xs ${theme.text}`}>Team 1</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Players */}
-            <div className="bg-black/30 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/20 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-medium text-neutral-400 uppercase tracking-wider">AI Opponents</h2>
-                <button
-                  onClick={addAI}
-                  disabled={aiPlayers.length >= 7}
-                  className={`text-xs ${theme.text} hover:opacity-80 disabled:text-neutral-600 disabled:cursor-not-allowed transition-colors`}
-                >
-                  + Add AI
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {aiPlayers.map(ai => (
-                  <div key={ai.id} className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-red-500/20 rounded flex items-center justify-center">
-                        <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-white text-sm">{ai.name}</div>
-                      </div>
-                      <button
-                        onClick={() => removeAI(ai.id)}
-                        className="text-neutral-500 hover:text-red-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        value={ai.difficulty}
-                        onChange={(e) => updateAIDifficulty(ai.id, e.target.value as AIPlayer['difficulty'])}
-                        className="px-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-white focus:outline-none"
-                      >
-                        {DIFFICULTIES.map(d => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-
-                      <select
-                        value={ai.team}
-                        onChange={(e) => updateAITeam(ai.id, parseInt(e.target.value))}
-                        className="px-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-white focus:outline-none"
-                      >
-                        <option value={1}>Team 1 (Ally)</option>
-                        <option value={2}>Team 2 (Enemy)</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-
-                {aiPlayers.length === 0 && (
-                  <div className="text-center py-4 text-neutral-600 text-sm">
-                    No AI opponents added
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Start Button */}
-            <button className={`w-full py-6 text-lg font-semibold rounded-lg text-white ${theme.bg} ${theme.bgHover} transition-all duration-300 flex items-center justify-center`}>
-              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              </svg>
-              Launch Skirmish
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/[0.06]">
+          <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-sm rounded-lg transition-all">
+            Leave Battle
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setIsReady(!isReady)}
+              className={`px-4 py-2 text-sm rounded-lg transition-all ${
+                isReady
+                  ? 'bg-emerald-500/80 hover:bg-emerald-500 text-white'
+                  : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-neutral-300'
+              }`}
+            >
+              {isReady ? 'Ready!' : 'Not Ready'}
             </button>
-
-            {/* Selected Map Info */}
-            {selectedMapData && (
-              <div className="text-center text-xs text-neutral-600">
-                {selectedMapData.name} • {selectedMapData.size} map • {aiPlayers.length + 1} players
-              </div>
-            )}
+            <button className={`px-5 py-2 ${theme.bg} ${theme.bgHover} text-white text-sm font-medium rounded-lg transition-all`}>
+              Start Game
+            </button>
           </div>
         </div>
+      </div>
+
+      {/* Right Half: Chat + Map stacked */}
+      <div className="flex-1 flex flex-col gap-3">
+                {/* Map Section - bottom */}
+        <div className="h-48 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-3 shadow-xl shadow-black/30 flex gap-4">
+          {/* Map Preview */}
+          <div className="w-40 h-full bg-black/40 rounded-lg border border-white/[0.08] flex items-center justify-center overflow-hidden flex-shrink-0">
+            <svg className="w-12 h-12 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+          </div>
+
+          {/* Map Info */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-white">{battleInfo.map}</h3>
+              <button className={`text-xs ${theme.text} hover:underline`}>Change Map</button>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-500">
+              <div className="flex justify-between">
+                <span>Size:</span>
+                <span className="text-neutral-400">16x16</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Players:</span>
+                <span className="text-neutral-400">16</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Wind:</span>
+                <span className="text-neutral-400">0-2.5</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tidal:</span>
+                <span className="text-neutral-400">13</span>
+              </div>
+            </div>
+
+            {/* Spectators & Settings */}
+            <div className="mt-auto flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-500">Spectators:</span>
+                <span className="text-xs text-neutral-400 bg-white/[0.04] px-1.5 py-0.5 rounded">Watcher1</span>
+                <span className="text-xs text-neutral-400 bg-white/[0.04] px-1.5 py-0.5 rounded">Obs_Guy</span>
+              </div>
+              <button className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-neutral-400 text-xs rounded-lg transition-all">
+                Settings
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Chat - takes most of the space */}
+        <div className="flex-1 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-xl shadow-black/30 overflow-hidden">
+          <BattleRoomChat messages={MOCK_MESSAGES} theme={theme} />
+        </div>
+
+
       </div>
     </div>
   )
