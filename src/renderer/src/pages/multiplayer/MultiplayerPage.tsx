@@ -3,6 +3,7 @@ import BattleList from './BattleList'
 import BattleRoom from './BattleRoom'
 import LobbySidebar from './LobbySidebar'
 import { useThemeStore, themeColors } from '../../themeStore'
+import { GlassPanel } from '../../components/GlassPanel'
 
 // Hexagon grid pattern for matchmaking container
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
@@ -30,7 +31,7 @@ function MatchmakingPanel(): JSX.Element {
   }
 
   return (
-    <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden relative shadow-xl shadow-black/30">
+    <GlassPanel className="h-full flex flex-col overflow-hidden relative">
       {/* Hex Grid Background */}
       <div
         className="absolute inset-0 opacity-100 pointer-events-none"
@@ -106,7 +107,7 @@ function MatchmakingPanel(): JSX.Element {
           </div>
         )}
       </div>
-    </div>
+    </GlassPanel>
   )
 }
 
@@ -123,7 +124,7 @@ export default function MultiplayerPage(): JSX.Element {
   }
 
   return (
-    <div className="h-[calc(100vh-52px)] flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Sub-navbar */}
       <div className="bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex items-center gap-1 px-3 py-1">
         <button onClick={() => setActiveTab('battles')} className={navLinkClass('battles')}>

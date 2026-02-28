@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
 import { useBattles } from '../../store/appStore'
+import { GlassPanel } from '../../components/GlassPanel'
 
 
 
@@ -67,7 +68,7 @@ export default function BattleList(): JSX.Element {
   const runningCount = battles.values().filter(b => b.IsRunning).toArray().length
 
   return (
-    <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden relative shadow-xl shadow-black/30">
+    <GlassPanel className="h-full flex flex-col overflow-hidden relative">
       {/* Hex Grid Background */}
       <div
         className="absolute inset-0 opacity-100 pointer-events-none"
@@ -156,7 +157,7 @@ export default function BattleList(): JSX.Element {
           Host Battle
         </button>
       </div>
-    </div>
+    </GlassPanel>
   )
 }
 

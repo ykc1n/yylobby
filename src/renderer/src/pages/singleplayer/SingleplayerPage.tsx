@@ -16,6 +16,9 @@ export default function SingleplayerPage(): JSX.Element {
   }
 
   return (<>
+  <div className="flex flex-col h-full">
+
+  
   <div className="bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex gap-1 px-3 py-1">
     <NavLink to="/Singleplayer/Replays" className={navLinkClass}>
       Replays
@@ -27,13 +30,14 @@ export default function SingleplayerPage(): JSX.Element {
       Campaign
     </NavLink>
   </div>
-  <div className="">
+  <div className="flex-1 p-3 overflow-hidden">
     <Routes>
       <Route path="Replays" element={<ReplaysVeiw />} />
       <Route path="Skirmish" element={<SkirmishVeiw />} />
       <Route path="Campaign" element={<CampaignView />} />
       <Route path="" element={<Navigate to="/Singleplayer/Replays" replace />} />
     </Routes>
+  </div>
   </div>
   </>)
 }

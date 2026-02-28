@@ -203,7 +203,7 @@ function App(): JSX.Element {
 
   return (
     <HashRouter>
-      <div className="dark min-h-[100vh] bg-neutral-950 bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: `url(${lobbyBg})` }}>
+      <div className="dark h-screen flex flex-col bg-neutral-950 bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: `url(${lobbyBg})` }}>
         <div className="bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between shadow-lg shadow-black/20">
           <div className="flex">
             <NavLink to="/" className={navLinkClass}>
@@ -233,9 +233,8 @@ function App(): JSX.Element {
             </NavLink>
           </div>
         </div>
-
         <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-        <div className="">
+        <div className="flex-1 overflow-hidden">
           <Routes>
             <Route path="/Multiplayer" element={<MultiplayerPage />} />
             <Route path="/Singleplayer/*" element={<SingleplayerPage />} />

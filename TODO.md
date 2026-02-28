@@ -31,6 +31,7 @@
 - [ ] Sign up
 - [ ] Steam integration?
 - [ ] Logging out
+- [ ] Some saved offline accunt?
 
 ## Player interactions / Chat
 - [ ] Friend player

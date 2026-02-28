@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useThemeStore, themeColors } from '../themeStore'
 import { useNews } from '../store/appStore'
 import { useActions } from '@renderer/hooks/useActions'
+import { GlassPanel } from '../components/GlassPanel'
 
 // Hexagon grid pattern - proper honeycomb tiling
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
@@ -21,7 +22,7 @@ export default function HomePage(): JSX.Element {
   return (
     <div className="min-h-[calc(100vh-52px)] grid grid-cols-3 grid-rows-6  p-6">
       {/* Main Glassy Panel */}
-      <div className="relative max-w-6xl col-span-1 row-span-4  bg-black/30 backdrop-blur-2xl border border-white/[0.08] rounded-2xl p-6 shadow-2xl shadow-black/40">
+      <GlassPanel className="relative max-w-6xl col-span-1 row-span-4 rounded-2xl p-6">
         {/* Hex Grid Background for main panel */}
         <div
           className="absolute inset-0 opacity-100 pointer-events-none rounded-2xl"
@@ -43,7 +44,7 @@ export default function HomePage(): JSX.Element {
 
         {/* News/Updates Section */}
         <div className="mt-8">
-          <div className="relative p-6 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden shadow-xl shadow-black/30">
+          <GlassPanel className="relative p-6 overflow-hidden">
             {/* Hex Grid Background */}
             <div
               className="absolute inset-0 opacity-100 pointer-events-none"
@@ -79,10 +80,10 @@ export default function HomePage(): JSX.Element {
                 </div>
               )}
             </div>
-          </div>
+          </GlassPanel>
         </div>
       </div>
-      </div>
+      </GlassPanel>
     </div>
   )
 }

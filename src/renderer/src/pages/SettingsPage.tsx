@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useThemeStore, themeColors, ThemeColor } from '../themeStore'
 import { trpc } from '../../utils/trpc'
+import { GlassPanel } from '../components/GlassPanel'
 
 const COLOR_OPTIONS: ThemeColor[] = ['blue', 'cyan', 'violet', 'emerald', 'rose', 'amber', 'red']
 
@@ -79,18 +80,18 @@ export default function SettingsPage(): JSX.Element {
     <div className="min-h-[calc(100vh-52px)] p-6">
       <div className="max-w-xl mx-auto">
         {/* Header */}
-        <div className="mb-6 p-6 bg-black/40 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl shadow-black/30">
+        <GlassPanel className="mb-6 p-6 rounded-2xl">
           <div className="relative">
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
             <h1 className="text-2xl font-normal tracking-wide text-white mb-1">Settings</h1>
             <p className="text-sm text-neutral-400 tracking-wide">Customize your experience</p>
           </div>
-        </div>
+        </GlassPanel>
 
         {/* Settings Sections */}
         <div className="space-y-4">
           {/* Theme Color Section */}
-          <div className="relative bg-black/30 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 shadow-lg shadow-black/20">
+          <GlassPanel className="relative p-5">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
             <div className="relative">
             <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-4">Appearance</h2>
@@ -156,10 +157,10 @@ export default function SettingsPage(): JSX.Element {
               </div>
             </div>
             </div>
-          </div>
+          </GlassPanel>
 
           {/* Game Directories Section */}
-          <div className="relative bg-black/30 backdrop-blur-xl border border-white/[0.08] rounded-xl p-5 shadow-lg shadow-black/20">
+          <GlassPanel className="relative p-5">
             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
             <div className="relative">
               <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-4">Game Directories</h2>
@@ -246,7 +247,7 @@ export default function SettingsPage(): JSX.Element {
                 </div>
               </div>
             </div>
-          </div>
+          </GlassPanel>
         </div>
       </div>
     </div>

@@ -1,16 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
+import { GlassPanel } from '@renderer/components/panels'
 
-interface Player {
-  id: string
+interface PlayerOrBot {
   name: string
-  isHost: boolean
+  isBot: boolean
 }
 
 interface Team {
   id: number
   name: string
-  players: Player[]
+  players: PlayerOrBot[]
 }
 
 interface ChatMessage {
@@ -20,51 +20,22 @@ interface ChatMessage {
   time: string
 }
 
-// Mock data for the battleroom - 4v4v4v4
-const MOCK_TEAMS: Team[] = [
+const INITIAL_TEAMS: Team[] = [
   {
     id: 1,
     name: 'Team 1',
     players: [
-      { id: '1', name: 'Commander_Alpha', isHost: true },
-      { id: '2', name: 'IronForge', isHost: false },
-      { id: '3', name: 'NovaPilot', isHost: false },
-      { id: '4', name: 'Striker', isHost: false },
     ]
   },
   {
     id: 2,
     name: 'Team 2',
     players: [
-      { id: '5', name: 'SteelBrigade', isHost: false },
-      { id: '6', name: 'MechWarrior', isHost: false },
-      { id: '7', name: 'Phoenix', isHost: false },
     ]
   },
-  {
-    id: 3,
-    name: 'Team 3',
-    players: [
-      { id: '8', name: 'Vanguard', isHost: false },
-      { id: '9', name: 'Titan', isHost: false },
-    ]
-  },
-  {
-    id: 4,
-    name: 'Team 4',
-    players: [
-      { id: '10', name: 'Reaper', isHost: false },
-      { id: '11', name: 'Ghost', isHost: false },
-      { id: '12', name: 'Shadow', isHost: false },
-      { id: '13', name: 'Blade', isHost: false },
-    ]
-  }
 ]
 
 const MOCK_MESSAGES: ChatMessage[] = [
-  { id: '1', user: 'Commander_Alpha', text: 'Welcome to the battle!', time: new Date().toISOString() },
-  { id: '2', user: 'IronForge', text: 'Ready when you are', time: new Date().toISOString() },
-  { id: '3', user: 'SteelBrigade', text: 'glhf', time: new Date().toISOString() },
 ]
 
 function formatTime(isoString: string): string {
@@ -78,39 +49,20 @@ function formatTime(isoString: string): string {
 
 /*
 TODO: 
-- add yes no vote component
-- add a map vote component
-   what other votes are there?
-- finish spec list
+things that are joinable:
+- spectator list
+- team slots
+
+join button should show when:
+- I havent joined the team
+- there is space for me to join
+
 
 */
 
 
-function YesNoVote(): JSX.Element {
-  const votes = {
-    yes: 0,
-    no: 0
-  }
 
-  return (
-      <div>
-        <div className="grid grid-cols-6 mb-2">
-        <button className="p-4 border col-start-2 col-span-1 border-white/[0.1] rounded-lg text-sm text-white bg-green-400/[.3] hover:bg-green-400/[0.05] transition-all">
-          Yes
-          </button>
-          <button className="p-4 border col-start-5  border-white/[0.1] rounded-lg text-sm text-white bg-red-400/[.3] hover:bg-red-400/[0.1] transition-all">
-          No
-          </button>  
-        </div>
-
-        <div className="grid grid-cols-6">
-          <div className="bg-green-400 p-1"></div>
-        </div>
-      </div>
-  )
-}
-
-function TeamBox({ team, theme }: { team: Team; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
+function TeamBox({ team, theme, onJoin}: { team: Team; theme: typeof themeColors[keyof typeof themeColors]; onJoin: (teamId: number) => void }): JSX.Element {
   return (
     <div className="flex-1 border border-white/[0.08] rounded-lg p-2   min-w-0 flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1 border-b">
@@ -129,11 +81,16 @@ function TeamBox({ team, theme }: { team: Team; theme: typeof themeColors[keyof 
         ))}
 
         {/* Empty slots */}
-        {Array.from({ length: Math.max(0, 4 - team.players.length) }).map((_, i) => (
+        {Array.from({ length: Math.max(0, team.players.length) }).map((_, i) => (
           <div key={`empty-${i}`} className="px-3 py-2 border border-dashed border-white/[0.06] rounded-lg text-neutral-700 text-sm text-center">
             Empty
           </div>
-        ))}
+        ))
+        //need to check if max players is hit for this team or not     
+        }
+        <div className='px-3 py-1 border border-dashed border-white/[0.06] rounded-lg transition-colors duration-500 hover:bg-white/20 text-sm text-center text-neutral-300 cursor-pointer' onClick={() => onJoin(team.id)}>
+        Join
+        </div>
       </div>
     </div>
   )
@@ -183,7 +140,6 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
       </div>
       {/* yes no vote */}
       <div className="p-3 border-t border-white/[0.06]">
-      <YesNoVote />
         <div className="flex gap-2">
           <input
             type="text"
@@ -203,41 +159,50 @@ export default function BattleRoom(): JSX.Element {
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
   const [isReady, setIsReady] = useState(false)
-
+  const [spectating, setSpectating] = useState(false)
+  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS)
   const battleInfo = {
-    title: 'FFA 4v4v4v4 - All Welcome',
+    title: 'Skirmish Battle',
     map: 'Speed Metal',
     host: 'Commander_Alpha',
     maxPlayers: 16,
     currentPlayers: 13,
   }
+  function joinTeam(teamId: number): void {
+
+    setTeams((prevTeams) => {
+      return prevTeams.map((team) => {
+        if (team.id === teamId) return {...team, players: team.players.concat({name: "Player", isBot: false})}
+        return {...team, players: team.players.filter(p => p.isBot)}
+      })
+    })
+  }
 
   return (
     <div className="h-full flex gap-3">
       {/* Left Half: Teams Section */}
-      <div className="flex-1 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-4 shadow-xl shadow-black/30 flex flex-col">
+      <GlassPanel className="flex-1 p-4 flex flex-col">
         {/* Battle Header */}
         <div className="mb-4 pb-3 border-b border-white/[0.06]">
           <h2 className="text-base font-normal tracking-wide text-white mb-1">{battleInfo.title}</h2>
           <div className="flex items-center gap-3 text-xs text-neutral-500">
-            <span>Host: <span className={theme.text}>{battleInfo.host}</span></span>
-            <span className="w-1 h-1 bg-neutral-600 rounded-full" />
-            <span>{battleInfo.currentPlayers}/{battleInfo.maxPlayers} Players</span>
           </div>
         </div>
         <div className="flex-1 grid grid-cols-5 gap-3 min-h-0">
 
         <div>
-          <div className='p-3 border border-white/[0.06]'>
-            <h3 className="text-lg font-medium tracking-wide text-neutral-300 mb-2 border-b">Spectators</h3>
-
+          <div className=' border border-white/[0.06]'>
+            <h3 className=" px-3  text-lg font-medium tracking-wide text-neutral-300 border-b">Spectators</h3>
+              <div className='py-1 border border-dashed border-white/[0.06] transition-colors duration-500 hover:bg-white/20 text-sm text-center text-neutral-500'>
+             Join
+        </div>
           </div>
         </div>
 
         {/* Teams Grid - 2x2 */}
         <div className="flex-1 col-span-4 flexgap-3 min-h-0 overflow-auto space-y-4">
-          {MOCK_TEAMS.map((team) => (
-            <TeamBox key={team.id} team={team} theme={theme} />
+          {teams.map((team) => (
+            <TeamBox key={team.id} team={team}  theme={theme} onJoin={joinTeam} />
           ))}
         </div>        
         
@@ -246,25 +211,15 @@ export default function BattleRoom(): JSX.Element {
         {/* Bottom Actions */}
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/[0.06]">
           <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-sm rounded-lg transition-all">
-            Leave Battle
+            Spectate
           </button>
           <div className="flex gap-2">
-            <button
-              onClick={() => setIsReady(!isReady)}
-              className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                isReady
-                  ? 'bg-emerald-500/80 hover:bg-emerald-500 text-white'
-                  : 'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-neutral-300'
-              }`}
-            >
-              {isReady ? 'Ready!' : 'Not Ready'}
-            </button>
             <button className={`px-5 py-2 ${theme.bg} ${theme.bgHover} text-white text-sm font-medium rounded-lg transition-all`}>
               Start Game
             </button>
           </div>
         </div>
-      </div>
+      </GlassPanel>
 
       {/* Right Half: Chat + Map stacked */}
       <div className="flex-1 flex flex-col gap-3">
@@ -306,8 +261,6 @@ export default function BattleRoom(): JSX.Element {
             <div className="mt-auto flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-neutral-500">Spectators:</span>
-                <span className="text-xs text-neutral-400 bg-white/[0.04] px-1.5 py-0.5 rounded">Watcher1</span>
-                <span className="text-xs text-neutral-400 bg-white/[0.04] px-1.5 py-0.5 rounded">Obs_Guy</span>
               </div>
               <button className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-neutral-400 text-xs rounded-lg transition-all">
                 Settings

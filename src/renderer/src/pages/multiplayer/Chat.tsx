@@ -4,6 +4,7 @@ import { useThemeStore, themeColors } from '../../themeStore'
 import { useChannels, useActiveChannel, useActiveChannelData, useUsers} from '../../store/appStore'
 import { useActions } from '../../hooks/useActions'
 import rankImage from '../../assets/rankImagesLarge/0_0.png'
+import { GlassPanel } from '../../components/GlassPanel'
 
 function formatTime(isoString: string): string {
   try {
@@ -215,7 +216,7 @@ export function ChatPanel(): JSX.Element {
         onIgnore={handleIgnorePlayer}
       />
 
-      <div className="h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl overflow-hidden shadow-xl shadow-black/30">
+      <GlassPanel className="h-full flex flex-col overflow-hidden">
         {/* Header */}
       <div className="px-4 py-3">
         <div className="flex items-center justify-between mb-3">
@@ -445,7 +446,7 @@ export function ChatPanel(): JSX.Element {
           </div>
         </div>
       </div>
-    </div>
+    </GlassPanel>
     </>
   )
 }
