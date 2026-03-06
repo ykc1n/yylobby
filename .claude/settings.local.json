@@ -8,6 +8,11 @@
       "Bash(timeout 15 npm run dev:*)",
       "Bash(timeout 12 npm run dev:*)",
       "Bash(timeout 8 npm run dev)"
+    ],
+    "additionalDirectories": [
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Zero-K\\games\\therxlobby.sdd",
+      "C:\\Program Files\\Beyond-All-Reason\\data\\games\\Beyond-All-Reason",
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Zero-K\\games\\zk.sdd"
     ]
   }
 }

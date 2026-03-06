@@ -130,6 +130,31 @@ export const appRouter = t.router({
       opts.ctx.replayManager.refreshPaths()
       return { success: true }
     }),
+  getAvailableAIs: t.procedure.query((opts) => {
+    return opts.ctx.zk_launcher.getAvailableAIs()
+  }),
+
+  getAvailableMaps: t.procedure.query((opts) => {
+    return opts.ctx.zk_launcher.getAvailableMaps()
+  }),
+
+  startSkirmish: t.procedure
+    .input(z.object({
+      mapName: z.string(),
+      teams: z.array(z.object({
+        allyTeam: z.number(),
+        players: z.array(z.object({
+          name: z.string(),
+          isBot: z.boolean(),
+          aiShortName: z.string().optional(),
+          aiVersion: z.string().optional(),
+        }))
+      }))
+    }))
+    .mutation(async (opts) => {
+      return await opts.ctx.zk_launcher.startSkirmish(opts.input)
+    }),
+
   testDownload: t.procedure.mutation(async (opts) => {
     opts.ctx.zerokDownloader.testDownload()
     return { success: true }

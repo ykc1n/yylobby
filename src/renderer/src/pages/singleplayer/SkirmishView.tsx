@@ -1,10 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
 import { GlassPanel } from '@renderer/components/panels'
+import { trpc } from '../../../utils/trpc'
+
+interface AI {
+  shortName: string
+  version: string
+  displayName: string
+  description: string
+}
 
 interface PlayerOrBot {
   name: string
   isBot: boolean
+  aiShortName?: string
 }
 
 interface Team {
@@ -48,7 +57,7 @@ function formatTime(isoString: string): string {
 }
 
 /*
-TODO: 
+TODO:
 things that are joinable:
 - spectator list
 - team slots
@@ -62,34 +71,61 @@ join button should show when:
 
 
 
-function TeamBox({ team, theme, onJoin}: { team: Team; theme: typeof themeColors[keyof typeof themeColors]; onJoin: (teamId: number) => void }): JSX.Element {
+function TeamBox({ team, theme, onJoin, onAddBot, onSetBotAI, isMyTeam, availableAIs }: {
+  team: Team
+  theme: typeof themeColors[keyof typeof themeColors]
+  onJoin: (teamId: number) => void
+  onAddBot: (teamId: number) => void
+  onSetBotAI: (teamId: number, playerIndex: number, aiShortName: string) => void
+  isMyTeam: boolean
+  availableAIs: AI[]
+}): JSX.Element {
   return (
-    <div className="flex-1 border border-white/[0.08] rounded-lg p-2   min-w-0 flex flex-col">
+    <div className="flex-1 border border-white/[0.08] rounded-lg p-2 min-w-0 flex flex-col">
       <div className="flex items-center justify-between mb-3 px-1 border-b">
         <h3 className="text-lg font-medium tracking-wide text-neutral-300">{team.name}</h3>
-        <span className="text-xs text-neutral-600">{team.players.length}/4</span>
+        <span className="text-xs text-neutral-600">{team.players.length}</span>
       </div>
 
-      <div className="flex-1">
-        {team.players.map((player) => (
-          <div
-            key={player.id}
-            className={`flex items-center gap-2 px-3 `}
-          >
-            <span className={`text-sm text-neutral-300 truncate ${player.isHost ? 'text-yellow-200' : 'text-neutral-300'}`}>{player.name}</span>
+      <div className="flex-1 flex flex-col gap-0.5">
+        {team.players.map((player, i) => (
+          <div key={i} className={`flex items-center gap-2 px-3 py-1 rounded ${!player.isBot && isMyTeam ? 'bg-white/[0.06]' : ''}`}>
+            <span className={`text-sm truncate flex-1 ${!player.isBot && isMyTeam ? theme.text : 'text-neutral-300'}`}>
+              {player.name}
+            </span>
+            {player.isBot && (
+              <select
+                value={player.aiShortName ?? ''}
+                onChange={(e) => onSetBotAI(team.id, i, e.target.value)}
+                className="text-xs bg-white/[0.04] border border-white/[0.08] rounded px-1 py-0.5 text-neutral-400 focus:outline-none focus:border-white/[0.15] cursor-pointer"
+              >
+                {availableAIs.length === 0 ? (
+                  <option value="">Loading...</option>
+                ) : (
+                  availableAIs.map((ai) => (
+                    <option key={ai.shortName} value={ai.shortName}>{ai.displayName}</option>
+                  ))
+                )}
+              </select>
+            )}
           </div>
         ))}
 
-        {/* Empty slots */}
-        {Array.from({ length: Math.max(0, team.players.length) }).map((_, i) => (
-          <div key={`empty-${i}`} className="px-3 py-2 border border-dashed border-white/[0.06] rounded-lg text-neutral-700 text-sm text-center">
-            Empty
-          </div>
-        ))
-        //need to check if max players is hit for this team or not     
-        }
-        <div className='px-3 py-1 border border-dashed border-white/[0.06] rounded-lg transition-colors duration-500 hover:bg-white/20 text-sm text-center text-neutral-300 cursor-pointer' onClick={() => onJoin(team.id)}>
-        Join
+        <div className="flex gap-1 mt-1">
+          {!isMyTeam && (
+            <button
+              className="flex-1 px-3 py-1 border border-dashed border-white/[0.06] rounded-lg transition-colors duration-500 hover:bg-white/20 text-sm text-center text-neutral-300 cursor-pointer"
+              onClick={() => onJoin(team.id)}
+            >
+              Join
+            </button>
+          )}
+          <button
+            className="flex-1 px-3 py-1 border border-dashed border-white/[0.06] rounded-lg transition-colors duration-500 hover:bg-white/20 text-sm text-center text-neutral-500 cursor-pointer"
+            onClick={() => onAddBot(team.id)}
+          >
+            + Bot
+          </button>
         </div>
       </div>
     </div>
@@ -158,23 +194,76 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
 export default function BattleRoom(): JSX.Element {
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
-  const [isReady, setIsReady] = useState(false)
-  const [spectating, setSpectating] = useState(false)
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS)
+  const [currentTeam, setCurrentTeam] = useState<number | null>(null)
+  const battleTitle = teams.map(t => t.players.length).join('v')
+
+  const aiQuery = trpc.getAvailableAIs.useQuery()
+  const availableAIs: AI[] = aiQuery.data ?? []
+  const mapsQuery = trpc.getAvailableMaps.useQuery()
+  const availableMaps = mapsQuery.data ?? []
+  const startSkirmish = trpc.startSkirmish.useMutation()
+
+  const [selectedMap, setSelectedMap] = useState('Speed Metal')
+  const [startError, setStartError] = useState<string | null>(null)
+
   const battleInfo = {
-    title: 'Skirmish Battle',
-    map: 'Speed Metal',
-    host: 'Commander_Alpha',
-    maxPlayers: 16,
-    currentPlayers: 13,
+    map: selectedMap,
   }
   function joinTeam(teamId: number): void {
+    if (currentTeam === teamId) return
+    setTeams((prevTeams) => prevTeams.map((team) => {
+      if (team.id === teamId) return { ...team, players: [...team.players, { name: 'Player', isBot: false }] }
+      if (team.id === currentTeam) return { ...team, players: team.players.filter(p => p.isBot) }
+      return team
+    }))
+    setCurrentTeam(teamId)
+  }
 
-    setTeams((prevTeams) => {
-      return prevTeams.map((team) => {
-        if (team.id === teamId) return {...team, players: team.players.concat({name: "Player", isBot: false})}
-        return {...team, players: team.players.filter(p => p.isBot)}
-      })
+  function addBot(teamId: number): void {
+    const defaultAI = availableAIs[0]?.shortName ?? ''
+    setTeams((prevTeams) => prevTeams.map((team) => {
+      if (team.id !== teamId) return team
+      const botCount = team.players.filter(p => p.isBot).length
+      return { ...team, players: [...team.players, { name: `Bot ${botCount + 1}`, isBot: true, aiShortName: defaultAI }] }
+    }))
+  }
+
+  function setBotAI(teamId: number, playerIndex: number, aiShortName: string): void {
+    setTeams((prevTeams) => prevTeams.map((team) => {
+      if (team.id !== teamId) return team
+      const players = team.players.map((p, i) => i === playerIndex ? { ...p, aiShortName } : p)
+      return { ...team, players }
+    }))
+  }
+
+  function handleStartGame(): void {
+    setStartError(null)
+    const hasPlayers = teams.some(t => t.players.length > 0)
+    if (!hasPlayers) {
+      setStartError('Add at least one player or bot to start')
+      return
+    }
+    // Find the AI version for a given shortName
+    function findAIVersion(shortName: string): string | undefined {
+      return availableAIs.find(ai => ai.shortName === shortName)?.version
+    }
+    startSkirmish.mutate({
+      mapName: selectedMap,
+      teams: teams.map((team, i) => ({
+        allyTeam: i,
+        players: team.players.map(p => ({
+          name: p.name,
+          isBot: p.isBot,
+          aiShortName: p.aiShortName,
+          aiVersion: p.isBot ? findAIVersion(p.aiShortName ?? '') : undefined,
+        }))
+      }))
+    }, {
+      onError: (err) => setStartError(err.message),
+      onSuccess: (data) => {
+        if (!data.success) setStartError(data.error ?? 'Failed to start game')
+      }
     })
   }
 
@@ -184,7 +273,7 @@ export default function BattleRoom(): JSX.Element {
       <GlassPanel className="flex-1 p-4 flex flex-col">
         {/* Battle Header */}
         <div className="mb-4 pb-3 border-b border-white/[0.06]">
-          <h2 className="text-base font-normal tracking-wide text-white mb-1">{battleInfo.title}</h2>
+          <h2 className="text-base font-normal tracking-wide text-white mb-1">{battleTitle}</h2>
           <div className="flex items-center gap-3 text-xs text-neutral-500">
           </div>
         </div>
@@ -202,10 +291,10 @@ export default function BattleRoom(): JSX.Element {
         {/* Teams Grid - 2x2 */}
         <div className="flex-1 col-span-4 flexgap-3 min-h-0 overflow-auto space-y-4">
           {teams.map((team) => (
-            <TeamBox key={team.id} team={team}  theme={theme} onJoin={joinTeam} />
+            <TeamBox key={team.id} team={team} theme={theme} onJoin={joinTeam} onAddBot={addBot} onSetBotAI={setBotAI} isMyTeam={currentTeam === team.id} availableAIs={availableAIs} />
           ))}
-        </div>        
-        
+        </div>
+
         </div>
 
         {/* Bottom Actions */}
@@ -213,9 +302,14 @@ export default function BattleRoom(): JSX.Element {
           <button className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-sm rounded-lg transition-all">
             Spectate
           </button>
-          <div className="flex gap-2">
-            <button className={`px-5 py-2 ${theme.bg} ${theme.bgHover} text-white text-sm font-medium rounded-lg transition-all`}>
-              Start Game
+          <div className="flex items-center gap-3">
+            {startError && <span className="text-xs text-red-400">{startError}</span>}
+            <button
+              className={`px-5 py-2 ${theme.bg} ${theme.bgHover} text-white text-sm font-medium rounded-lg transition-all cursor-pointer disabled:opacity-50`}
+              onClick={handleStartGame}
+              disabled={startSkirmish.isPending}
+            >
+              {startSkirmish.isPending ? 'Starting...' : 'Start Game'}
             </button>
           </div>
         </div>
@@ -235,8 +329,19 @@ export default function BattleRoom(): JSX.Element {
           {/* Map Info */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-white">{battleInfo.map}</h3>
-              <button className={`text-xs ${theme.text} hover:underline`}>Change Map</button>
+              <select
+                value={selectedMap}
+                onChange={(e) => setSelectedMap(e.target.value)}
+                className="text-sm font-medium bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-white focus:outline-none focus:border-white/[0.15] cursor-pointer max-w-[200px] truncate"
+              >
+                {availableMaps.length === 0 ? (
+                  <option value={selectedMap}>{selectedMap}</option>
+                ) : (
+                  availableMaps.map((m) => (
+                    <option key={m.name} value={m.name}>{m.name}</option>
+                  ))
+                )}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-500">
               <div className="flex justify-between">
