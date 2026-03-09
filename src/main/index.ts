@@ -10,6 +10,7 @@ import { ReplayManager } from './local/replays'
 import { ZkLauncher } from './local/zk_launcher'
 import { SettingsManager } from './local/settings'
 import { ZerokDownloader } from './local/ZeroKDownloader'
+import { ReplayAnalyzer } from './local/replay_analyzer'
 console.log('[Main] Starting application')
 
 // Create singleton instances - these exist for the lifetime of the app
@@ -20,6 +21,7 @@ export const lobbyInterface = new ZerokLobbyInterface(connection, lobbyState)
 export const replayManager = new ReplayManager(settingsManager)
 export const zk_launcher = new ZkLauncher(settingsManager)
 export const zerokDownloader = new ZerokDownloader()
+export const replayAnalyzer = new ReplayAnalyzer()
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     resizable: true,

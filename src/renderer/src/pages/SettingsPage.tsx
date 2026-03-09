@@ -26,9 +26,22 @@ const colorRingClasses: Record<ThemeColor, string> = {
   red: 'ring-red-400',
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function SettingsPage(): JSX.Element {
   const { themeColor, setThemeColor } = useThemeStore()
   const theme = themeColors[themeColor]
+  const utils = trpc.useUtils()
 
   // Settings state
   const [zeroKDirectory, setZeroKDirectory] = useState('')
@@ -40,6 +53,8 @@ export default function SettingsPage(): JSX.Element {
   const addReplayDirMutation = trpc.addReplayDirectory.useMutation()
   const removeReplayDirMutation = trpc.removeReplayDirectory.useMutation()
   const browseMutation = trpc.browseForDirectory.useMutation()
+  const analysisCacheInfoQuery = trpc.getReplayAnalysisCacheInfo.useQuery()
+  const clearReplayAnalysisCacheMutation = trpc.clearReplayAnalysisCache.useMutation()
 
   // Load settings on mount
   useEffect(() => {
@@ -74,6 +89,14 @@ export default function SettingsPage(): JSX.Element {
   const handleRemoveReplayDir = async (directory: string): Promise<void> => {
     await removeReplayDirMutation.mutateAsync({ directory })
     settingsQuery.refetch()
+  }
+
+  const handleClearReplayAnalysisCache = async (): Promise<void> => {
+    await clearReplayAnalysisCacheMutation.mutateAsync()
+    await analysisCacheInfoQuery.refetch()
+    await utils.getReplays.invalidate()
+    await utils.getReplayAnalysis.invalidate()
+    await utils.getReplayAnalysisStatuses.invalidate()
   }
 
   return (
@@ -244,6 +267,43 @@ export default function SettingsPage(): JSX.Element {
                   <p className="text-xs text-neutral-600 mt-1.5 tracking-wide">
                     Add extra folders to scan for replay files (.sdfz)
                   </p>
+                </div>
+              </div>
+            </div>
+          </GlassPanel>
+
+          <GlassPanel className="relative p-5">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+            <div className="relative">
+              <h2 className="text-sm font-normal text-white/80 tracking-[0.12em] uppercase mb-4">Replay Analysis Cache</h2>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+                    <div className="text-[10px] text-neutral-500 tracking-[0.1em] uppercase mb-1">Disk Usage</div>
+                    <div className="text-lg text-white/85 tracking-wide">
+                      {analysisCacheInfoQuery.data ? formatBytes(analysisCacheInfoQuery.data.sizeBytes) : '...'}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+                    <div className="text-[10px] text-neutral-500 tracking-[0.1em] uppercase mb-1">Analyzed Replays</div>
+                    <div className="text-lg text-white/85 tracking-wide">
+                      {analysisCacheInfoQuery.data ? analysisCacheInfoQuery.data.entryCount : '...'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+                  <p className="text-sm text-neutral-400 tracking-wide mb-3">
+                    Replay analysis is stored on disk so analyzed replays stay linked to their saved data.
+                  </p>
+                  <button
+                    onClick={handleClearReplayAnalysisCache}
+                    disabled={clearReplayAnalysisCacheMutation.isPending}
+                    className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-red-200 text-sm font-normal tracking-wide rounded-lg transition-all duration-200 border border-red-500/20"
+                  >
+                    {clearReplayAnalysisCacheMutation.isPending ? 'Clearing Cache...' : 'Clear Replay Analysis Cache'}
+                  </button>
                 </div>
               </div>
             </div>

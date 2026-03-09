@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
 import { GlassPanel } from '@renderer/components/panels'
 import { trpc } from '../../../utils/trpc'
+import { MapThumbnail } from '../../components/MapThumbnail'
 
 interface AI {
   shortName: string
@@ -27,6 +28,11 @@ interface ChatMessage {
   user: string
   text: string
   time: string
+}
+
+interface AvailableMap {
+  name: string
+  thumbnailPath?: string | null
 }
 
 const INITIAL_TEAMS: Team[] = [
@@ -201,11 +207,12 @@ export default function BattleRoom(): JSX.Element {
   const aiQuery = trpc.getAvailableAIs.useQuery()
   const availableAIs: AI[] = aiQuery.data ?? []
   const mapsQuery = trpc.getAvailableMaps.useQuery()
-  const availableMaps = mapsQuery.data ?? []
+  const availableMaps: AvailableMap[] = mapsQuery.data ?? []
   const startSkirmish = trpc.startSkirmish.useMutation()
 
   const [selectedMap, setSelectedMap] = useState('Speed Metal')
   const [startError, setStartError] = useState<string | null>(null)
+  const selectedMapData = availableMaps.find((map) => map.name === selectedMap)
 
   const battleInfo = {
     map: selectedMap,
@@ -320,11 +327,12 @@ export default function BattleRoom(): JSX.Element {
                 {/* Map Section - bottom */}
         <div className="h-48 bg-black/40 backdrop-blur-2xl border border-white/[0.1] rounded-xl p-3 shadow-xl shadow-black/30 flex gap-4">
           {/* Map Preview */}
-          <div className="w-40 h-full bg-black/40 rounded-lg border border-white/[0.08] flex items-center justify-center overflow-hidden flex-shrink-0">
-            <svg className="w-12 h-12 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-          </div>
+          <MapThumbnail
+            mapName={selectedMap}
+            thumbnailPath={selectedMapData?.thumbnailPath}
+            className="w-40 h-full rounded-lg border border-white/[0.08] flex-shrink-0 bg-black/40"
+            iconClassName="w-12 h-12 text-neutral-700"
+          />
 
           {/* Map Info */}
           <div className="flex-1 flex flex-col min-w-0">

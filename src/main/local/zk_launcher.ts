@@ -15,6 +15,8 @@ TODO:
 */
 export class ZkLauncher{
     private settingsManager: SettingsManager
+    private mapThumbnailIndex = new Map<string, string>()
+    private mapThumbnailIndexBasePath = ''
     platform = "win64"
     engine_binary = "spring"
     engines = new Map()
@@ -217,13 +219,27 @@ export class ZkLauncher{
         return latestPath
     }
 
-    getAvailableMaps(): Array<{ name: string }> {
+    getAvailableMaps(): Array<{ name: string; thumbnailPath?: string }> {
         this.parseCache()
-        const result: Array<{ name: string }> = []
+        const result: Array<{ name: string; thumbnailPath?: string }> = []
         for (const [name] of this.maps) {
-            result.push({ name })
+            const thumbnailPath = this.getMapThumbnailPath(name)
+            result.push(thumbnailPath ? { name, thumbnailPath } : { name })
         }
         return result.sort((a, b) => a.name.localeCompare(b.name))
+    }
+
+    getMapThumbnailPath(mapName: string): string | null {
+        this.ensureMapThumbnailIndex()
+
+        for (const candidate of this.getMapThumbnailLookupKeys(mapName)) {
+            const thumbnailPath = this.mapThumbnailIndex.get(candidate)
+            if (thumbnailPath) {
+                return thumbnailPath
+            }
+        }
+
+        return null
     }
 
     getGameName(): string | null {
@@ -364,52 +380,55 @@ export class ZkLauncher{
         return { success: true }
     }
 
+    async resolveEngineForReplay(replaypath: string): Promise<{ enginePath: string; mapName: string; modName: string; version: string } | null> {
+        if(!replaypath.endsWith(".sdfz")){
+            console.log("Invalid replay (does not end with sdfz)")
+            return null
+        }
+        if(!fs.existsSync(replaypath)){
+            console.log(`Filepath does not exist: ${replaypath}`)
+            return null
+        }
+        const parser = new DemoParser()
+        const demo = await parser.parseDemo(replaypath)
+
+        const mapName = demo.info.meta.map
+        const modName = demo.info.meta.game
+        const version = demo.header.versionString
+
+        this.findEngines()
+        if (version.startsWith('2') && (version.match(/\./g)?.length == 2)){
+            if(this.engines.has(version)){
+                return { enginePath: this.engines.get(version), mapName, modName, version }
+            } else {
+                console.log("cant find engine for version", version)
+                return null
+            }
+        } else {
+            console.log("old version detected, not supported")
+            return null
+        }
+    }
+
+    async getEngineDir(replaypath: string): Promise<string | null> {
+        try {
+            const resolved = await this.resolveEngineForReplay(replaypath)
+            return resolved?.enginePath ?? null
+        } catch (error) {
+            console.error("Error resolving engine for replay:", error)
+            return null
+        }
+    }
+
     async start_replay(replaypath: string):Promise<void>{
         try {
             console.log("start_replay called with:", replaypath)
-            if(!replaypath.endsWith(".sdfz")){
-                console.log("Invalid replay (does not end with sdfz)")
-                return 
-            }
-            if(!fs.existsSync(replaypath)){
-                console.log(`Filepath does not exist: ${replaypath}`)
-                return
-            }
-            console.log("parsing!")
-            const parser = new DemoParser()
+            const resolved = await this.resolveEngineForReplay(replaypath)
+            if (!resolved) return
 
-            const demo = await parser.parseDemo(replaypath)
-
-            const mapname = demo.info.meta.map
-            const modname = demo.info.meta.game
-            const version = demo.header.versionString
+            const { enginePath: engine, mapName: mapname, modName: modname, version } = resolved
             console.log(`map name: ${mapname}, mod name: ${modname} version ${version}`)
-            console.log(version.match(/\./))
-            //new version check
-            this.findEngines()
-            let engine = ''
-            if (version.startsWith('2') && (version.match(/\./g)?.length == 2)){
-                console.log(`clocked as new version ${version}`)
-                const subversions = version.split('.')
-                const releaseID = `rel${subversions[0].slice(2)}${subversions[1]}`
-                const enginedir = `${releaseID}.${version}`
-                console.log(enginedir)
-                console.log(this.engines)
 
-                if(this.engines.has(version)){
-                    engine = this.engines.get(version)
-                    console.log("found engine omg")
-                } else {
-                    console.log("cant find engine")
-                    return
-                }
-
-
-                
-            } else {
-                console.log("old version detected lol lemme implement that waa")
-                return
-            }
             this.parseCache()
             if(!this.maps.has(mapname)){
                 console.log("map not available")
@@ -419,15 +438,13 @@ export class ZkLauncher{
                 console.log("game not availabe")
             }
 
-            
             const enginefullpath = path.join(engine, this.engine_binary)
-            if(fs.existsSync(enginefullpath)){
+            if(!fs.existsSync(enginefullpath)){
                 console.log("does not exist")
                 return
             }
             const runcmd = `"${enginefullpath}" --isolation --write-dir "${path.join(this.basePath)}"`
             console.log(runcmd)
-            // console.log("Launching engine for replay with: "+runcmd)
             const child = spawn(`${enginefullpath}`,["--isolation","--write-dir",`${path.join(this.basePath)}`, `${replaypath}`],{detached:true, stdio:'ignore'})
             child.unref();
             child.on('error', error=>console.log('error rip: '+error))
@@ -436,8 +453,55 @@ export class ZkLauncher{
             console.error("Error parsing replay file:", error.message)
             console.log("This appears to be an issue with the sdfz-demo-parser library")
             console.log("The replay file exists but contains data that the parser cannot handle")
-            // Don't re-throw the error so the app doesn't crash
         }
+    }
+
+    private ensureMapThumbnailIndex(): void {
+        if (this.mapThumbnailIndexBasePath === this.basePath && this.mapThumbnailIndex.size > 0) {
+            return
+        }
+
+        this.mapThumbnailIndex.clear()
+        this.mapThumbnailIndexBasePath = this.basePath
+
+        const thumbnailDirectories = [
+            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
+            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride'),
+            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
+            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride')
+        ]
+
+        for (const directory of thumbnailDirectories) {
+            if (!fs.existsSync(directory)) {
+                continue
+            }
+
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+                if (!entry.isFile()) {
+                    continue
+                }
+
+                const extension = path.extname(entry.name).toLowerCase()
+                if (!['.png', '.jpg', '.jpeg', '.dds'].includes(extension)) {
+                    continue
+                }
+
+                const key = path.basename(entry.name, extension).toLowerCase()
+                if (!this.mapThumbnailIndex.has(key)) {
+                    this.mapThumbnailIndex.set(key, path.join(directory, entry.name))
+                }
+            }
+        }
+    }
+
+    private getMapThumbnailLookupKeys(mapName: string): string[] {
+        const normalizedWhitespace = mapName.trim().replace(/\s+/g, ' ')
+        return Array.from(new Set([
+            normalizedWhitespace.toLowerCase(),
+            normalizedWhitespace.replace(/\s+/g, '_').toLowerCase(),
+            normalizedWhitespace.replace(/[^\w.-]+/g, '_').toLowerCase(),
+            normalizedWhitespace.replace(/\s+/g, '').toLowerCase()
+        ]))
     }
 
 
