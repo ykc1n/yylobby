@@ -77,7 +77,12 @@ export const appRouter = t.router({
         opts.ctx.replayManager.setGame(opts.input.game)
         opts.ctx.zk_launcher.setGame(opts.input.game)
         const replays = await opts.ctx.replayManager.getCurrentPage()
-        return { data: replays }
+        return {
+          data: replays.map((replay) => ({
+            ...replay,
+            mapThumbnailPath: opts.ctx.zk_launcher.getMapThumbnailPath(replay.map)
+          }))
+        }
       } catch (error) {
         console.error('Error in replays:', error)
         throw error
@@ -95,6 +100,27 @@ export const appRouter = t.router({
         console.error('Error in openReplay:', error)
         throw error
       }
+    }),
+
+  getReplayAnalysis: t.procedure
+    .input(z.object({ filename: z.string() }))
+    .query((opts) => {
+      return opts.ctx.replayManager.getReplayAnalysis(opts.input.filename)
+    }),
+
+  getReplayAnalysisStatuses: t.procedure
+    .query((opts) => {
+      return opts.ctx.replayManager.getReplayAnalysisStatuses()
+    }),
+
+  getReplayAnalysisCacheInfo: t.procedure
+    .query((opts) => {
+      return opts.ctx.replayManager.getReplayAnalysisCacheInfo()
+    }),
+
+  clearReplayAnalysisCache: t.procedure
+    .mutation((opts) => {
+      return opts.ctx.replayManager.clearReplayAnalysisCache()
     }),
 
   // Settings endpoints
@@ -163,10 +189,12 @@ export const appRouter = t.router({
   analyzeReplay: t.procedure
     .input(z.object({ filename: z.string() }))
     .mutation(async (opts) => {
-      const replayPath = path.join(opts.ctx.replayManager.getBaseReplayPath(), opts.input.filename)
-      const engineDir = await opts.ctx.zk_launcher.getEngineDir(replayPath)
-      if (!engineDir) return { success: false as const, error: 'Could not find engine for this replay', players: [] as never[], events: [] as never[] }
-      return await opts.ctx.replayAnalyzer.analyzeReplay(replayPath, opts.ctx.zk_launcher.basePath, engineDir)
+      return await opts.ctx.replayManager.enqueueReplayAnalysis(opts.input.filename, async () => {
+        const replayPath = path.join(opts.ctx.replayManager.getBaseReplayPath(), opts.input.filename)
+        const engineDir = await opts.ctx.zk_launcher.getEngineDir(replayPath)
+        if (!engineDir) return { success: false as const, error: 'Could not find engine for this replay', players: [] as never[], events: [] as never[] }
+        return await opts.ctx.replayAnalyzer.analyzeReplay(replayPath, opts.ctx.zk_launcher.basePath, engineDir)
+      })
     }),
 
   // Browse for directory (opens native dialog)

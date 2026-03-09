@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {trpc} from '../../../utils/trpc'
 import { useThemeStore, themeColors } from '../../themeStore'
 import { GlassPanel } from '../../components/GlassPanel'
+import { MapThumbnail } from '../../components/MapThumbnail'
 
 // Hexagon grid pattern - proper honeycomb tiling
 const hexGridSvg = `data:image/svg+xml,${encodeURIComponent(
@@ -20,6 +21,7 @@ interface PlayerData {
 interface ReplayData {
     filename: string
     map: string
+    mapThumbnailPath?: string | null
     game: string
     gameType: string
     duration: number
@@ -27,6 +29,50 @@ interface ReplayData {
     players: PlayerData[]
     winners?: number[]
     teams: Record<number, PlayerData[]>
+    hasAnalysis: boolean
+}
+
+interface ReplayAnalysisStatusData {
+    filename: string
+    status: 'queued' | 'running'
+    queuedAt: number
+    startedAt?: number
+    progress: number
+}
+
+function AnalysisStatusBadge(props: { analysisStatus: ReplayAnalysisStatusData }): JSX.Element {
+    return (
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide border ${
+            props.analysisStatus.status === 'running'
+                ? 'text-amber-300 border-amber-500/30 bg-amber-500/10'
+                : 'text-sky-300 border-sky-500/30 bg-sky-500/10'
+        }`}>
+            {props.analysisStatus.status === 'running' ? 'Analyzing' : 'Queued'}
+        </span>
+    )
+}
+
+function AnalysisCompleteBadge(): JSX.Element {
+    return (
+        <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide border text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
+            Analyzed
+        </span>
+    )
+}
+
+function AnalysisProgressBar(props: { analysisStatus: ReplayAnalysisStatusData; compact?: boolean }): JSX.Element {
+    return (
+        <div className={`${props.compact ? 'mt-2' : 'mt-3'} h-1.5 rounded-full bg-white/[0.05] overflow-hidden`}>
+            <div
+                className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+                    props.analysisStatus.status === 'running'
+                        ? 'bg-gradient-to-r from-amber-400/90 via-amber-300/80 to-amber-200/75'
+                        : 'bg-gradient-to-r from-sky-400/90 via-sky-300/80 to-sky-200/75'
+                }`}
+                style={{ width: `${Math.max(props.analysisStatus.progress, 3)}%` }}
+            />
+        </div>
+    )
 }
 
 function Replay(props:{
@@ -34,6 +80,7 @@ function Replay(props:{
     replayData: ReplayData
     selected: boolean
     theme: typeof themeColors[keyof typeof themeColors]
+    analysisStatus?: ReplayAnalysisStatusData
 }):JSX.Element{
 
     const map = props.replayData.map
@@ -63,18 +110,28 @@ function Replay(props:{
         >
             <div className="flex items-start gap-3">
                 {/* Map Preview */}
-                <div className="w-14 h-14 rounded-lg bg-white/[0.03] flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    <svg className="w-6 h-6 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                </div>
+                <MapThumbnail
+                    mapName={props.replayData.map}
+                    thumbnailPath={props.replayData.mapThumbnailPath}
+                    className="w-14 h-14 rounded-lg flex-shrink-0"
+                    iconClassName="w-6 h-6 text-neutral-600"
+                />
 
                 {/* Replay Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="font-normal text-white/85 text-sm tracking-wide mb-1">{gameType} on {map}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="font-normal text-white/85 text-sm tracking-wide min-w-0 truncate">{gameType} on {map}</div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {props.replayData.hasAnalysis && <AnalysisCompleteBadge />}
+                            {props.analysisStatus && <AnalysisStatusBadge analysisStatus={props.analysisStatus} />}
+                        </div>
+                    </div>
                     <div className="text-xs text-neutral-500 mb-2 tracking-wide">
                         {date ? new Date(date).toLocaleDateString() : 'Unknown'} · {durationMinutes} min
                     </div>
+                    {props.analysisStatus && (
+                        <AnalysisProgressBar analysisStatus={props.analysisStatus} compact />
+                    )}
                     <div className='flex gap-3 text-sm tracking-wide'>
                         {teamDivs.flatMap((div, idx) => idx === 0 ? [div] : [
                             <span key={`vs-${idx}`} className="text-neutral-600 self-center text-xs">vs</span>,
@@ -110,6 +167,18 @@ interface AnalysisResultData {
     durationFrames?: number
     events: Array<{ frame: number; type: string; team?: number; unitName?: string; description: string }>
     endGameStats?: { headers: string[]; values: number[][] }
+    firstFactories?: Array<{ name: string; teamId: number; factoryName: string; frame: number; isAI?: boolean }>
+}
+
+function hasMeaningfulAnalysisData(data: AnalysisResultData | null | undefined): boolean {
+    if (!data?.success) {
+        return false
+    }
+
+    return data.players.length > 0 ||
+        data.events.length > 0 ||
+        (data.firstFactories?.length ?? 0) > 0 ||
+        (data.endGameStats?.values.length ?? 0) > 0
 }
 
 function AnalysisResults({ data, theme }: { data: AnalysisResultData; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
@@ -121,8 +190,39 @@ function AnalysisResults({ data, theme }: { data: AnalysisResultData; theme: typ
         )
     }
 
+    if (!hasMeaningfulAnalysisData(data)) {
+        return (
+            <div className="mt-3 p-3 rounded-lg bg-neutral-800/50 border border-white/10 text-sm text-neutral-400">
+                Analysis completed, but no replay data was extracted.
+            </div>
+        )
+    }
+
     return (
         <div className="mt-3 space-y-3">
+            {/* First Factories */}
+            {data.firstFactories && data.firstFactories.length > 0 && (
+                <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10">
+                    <div className="text-[10px] tracking-wide text-neutral-500 uppercase mb-2">First Factories</div>
+                    <div className="space-y-2">
+                        {data.firstFactories.map((factory) => (
+                            <div key={`${factory.teamId}-${factory.factoryName}`} className="flex items-center justify-between gap-3 text-sm">
+                                <div className="min-w-0">
+                                    <div className="text-neutral-200 truncate">
+                                        {factory.name}
+                                        {factory.isAI && <span className="text-neutral-600 text-xs ml-1">(AI)</span>}
+                                    </div>
+                                    <div className="text-xs text-neutral-500 truncate">{factory.factoryName}</div>
+                                </div>
+                                <div className={`${theme.text} text-xs font-mono shrink-0`}>
+                                    {frameToTime(factory.frame)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Players */}
             {data.players.length > 0 && (
                 <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10">
@@ -191,12 +291,43 @@ function SelectedReplay(props:{
     replayData:ReplayData
     playReplay: ReturnType<typeof trpc.openReplay.useMutation>
     theme: typeof themeColors[keyof typeof themeColors]
+    analysisStatus?: ReplayAnalysisStatusData
 }):JSX.Element{
     const teams = props.replayData.teams
     const winners = props.replayData.winners?.[0]
     const durationMinutes = Math.floor(props.replayData.duration / 60000)
     const theme = props.theme
-    const analyzeReplay = trpc.analyzeReplay.useMutation()
+    const utils = trpc.useUtils()
+    const analysisQuery = trpc.getReplayAnalysis.useQuery(
+        { filename: props.replayData.filename },
+        {
+            refetchInterval: props.analysisStatus ? 1000 : false,
+            refetchIntervalInBackground: true
+        }
+    )
+    const analyzeReplay = trpc.analyzeReplay.useMutation({
+        onMutate: async () => {
+            utils.getReplayAnalysisStatuses.setData(undefined, (current) => {
+                const next = current ? [...current] : []
+                if (next.some((status) => status.filename === props.replayData.filename)) {
+                    return next
+                }
+                next.push({
+                    filename: props.replayData.filename,
+                    status: 'queued',
+                    queuedAt: Date.now(),
+                    progress: 6
+                })
+                return next
+            })
+        },
+        onSettled: async () => {
+            await utils.getReplayAnalysis.invalidate({ filename: props.replayData.filename })
+            await utils.getReplayAnalysisStatuses.invalidate()
+            await utils.getReplays.invalidate()
+        }
+    })
+    const previousAnalysisStatus = useRef<ReplayAnalysisStatusData | undefined>(props.analysisStatus)
 
     const teamDivs = Object.entries(teams).map(([teamId, teamPlayers]) => (
         <div className={`flex flex-col gap-0.5 p-2.5 rounded-lg border ${Number(teamId) === winners ? 'text-emerald-400/80 border-emerald-500/10 bg-emerald-500/[0.03]' : 'text-red-400/70 border-red-500/10 bg-red-500/[0.03]'}`} key={teamId}>
@@ -217,14 +348,29 @@ function SelectedReplay(props:{
         analyzeReplay.mutate({ filename: props.replayData.filename })
     }
 
+    const cachedAnalysis = analysisQuery.data as AnalysisResultData | null | undefined
+    const displayedAnalysis = hasMeaningfulAnalysisData(cachedAnalysis) ? cachedAnalysis : null
+    const failedAnalysis = analyzeReplay.data && !analyzeReplay.data.success ? analyzeReplay.data as AnalysisResultData : null
+    const analyzeButtonLabel = props.analysisStatus
+        ? props.analysisStatus.status === 'queued' ? 'Queued...' : 'Analyzing...'
+        : displayedAnalysis ? 'Re-analyze Replay' : 'Analyze Replay'
+
+    useEffect(() => {
+        if (previousAnalysisStatus.current && !props.analysisStatus) {
+            void analysisQuery.refetch()
+        }
+        previousAnalysisStatus.current = props.analysisStatus
+    }, [analysisQuery, props.analysisStatus])
+
     return (
         <GlassPanel className="p-4">
             {/* Map Preview */}
-            <div className="aspect-video bg-neutral-800/50 rounded-lg mb-4 flex items-center justify-center border border-white/10">
-                <svg className="w-10 h-10 text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
-            </div>
+            <MapThumbnail
+                mapName={props.replayData.map}
+                thumbnailPath={props.replayData.mapThumbnailPath}
+                className="aspect-video rounded-lg mb-4 border border-white/10 bg-neutral-800/50"
+                iconClassName="w-10 h-10 text-neutral-700"
+            />
 
             <h3 className="text-base font-normal tracking-wide text-white/90 mb-1">{props.replayData.gameType} on {props.replayData.map}</h3>
             <div className="text-sm text-neutral-500 mb-4 tracking-wide">
@@ -243,6 +389,23 @@ function SelectedReplay(props:{
                 {props.replayData.filename}
             </div>
 
+            {(props.analysisStatus || props.replayData.hasAnalysis) && (
+                <div className="mb-4 rounded-lg border border-white/10 bg-neutral-800/45 px-3 py-3">
+                    <div className="flex items-center gap-2">
+                        {props.replayData.hasAnalysis && <AnalysisCompleteBadge />}
+                        {props.analysisStatus && <AnalysisStatusBadge analysisStatus={props.analysisStatus} />}
+                    </div>
+                    <p className="mt-2 text-sm text-neutral-400">
+                        {props.analysisStatus
+                            ? displayedAnalysis
+                                ? 'A fresh analysis is running. Saved results remain visible until it finishes.'
+                                : 'This replay is being analyzed now.'
+                            : 'Saved replay analysis is available on disk.'}
+                    </p>
+                    {props.analysisStatus && <AnalysisProgressBar analysisStatus={props.analysisStatus} />}
+                </div>
+            )}
+
             <button
                 onClick={handlePlayReplay}
                 className={`w-full py-2.5 ${theme.bg} ${theme.bgHover} text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200`}
@@ -253,32 +416,58 @@ function SelectedReplay(props:{
                 Play Replay
             </button>
 
-            <button
-                onClick={handleAnalyze}
-                disabled={analyzeReplay.isPending}
-                className={`w-full py-2.5 mt-2 bg-neutral-700/50 hover:bg-neutral-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200 border border-white/10`}
-            >
-                {analyzeReplay.isPending ? (
-                    <>
-                        <div
-                            className="w-4 h-4 inline-block mr-2 -mt-0.5 border-2 rounded-full animate-spin"
-                            style={{ borderColor: `rgba(${theme.rgb}, 0.2)`, borderTopColor: `rgba(${theme.rgb}, 0.8)` }}
-                        />
-                        Analyzing...
-                    </>
-                ) : (
-                    <>
-                        <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        Analyze
-                    </>
-                )}
-            </button>
+            <div className="mt-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="text-[10px] tracking-wide text-neutral-500 uppercase">Analysis</div>
+                    {props.replayData.hasAnalysis && !props.analysisStatus && <AnalysisCompleteBadge />}
+                </div>
 
-            {analyzeReplay.data && (
-                <AnalysisResults data={analyzeReplay.data as AnalysisResultData} theme={theme} />
-            )}
+                <div className="mb-3 rounded-lg bg-neutral-800/50 border border-white/10 p-3">
+                    <p className="text-sm text-neutral-400 mb-3">
+                        {props.analysisStatus
+                            ? 'Analysis is in progress. You can stay on this replay or switch away and come back.'
+                            : displayedAnalysis
+                                ? 'Saved analysis is shown below. Re-analyze to refresh stale or outdated data.'
+                                : 'This replay has not been analyzed yet.'}
+                    </p>
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={analyzeReplay.isPending || Boolean(props.analysisStatus)}
+                        className={`w-full py-2.5 bg-neutral-700/50 hover:bg-neutral-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200 border border-white/10`}
+                    >
+                        {analyzeReplay.isPending || props.analysisStatus ? (
+                            <>
+                                <div
+                                    className="w-4 h-4 inline-block mr-2 -mt-0.5 border-2 rounded-full animate-spin"
+                                    style={{ borderColor: `rgba(${theme.rgb}, 0.2)`, borderTopColor: `rgba(${theme.rgb}, 0.8)` }}
+                                />
+                                {analyzeButtonLabel}
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                {analyzeButtonLabel}
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                {displayedAnalysis && (
+                    <AnalysisResults data={displayedAnalysis} theme={theme} />
+                )}
+
+                {!displayedAnalysis && analysisQuery.isPending && !props.analysisStatus && (
+                    <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10 text-sm text-neutral-500">
+                        Loading saved analysis...
+                    </div>
+                )}
+
+                {failedAnalysis && (
+                    <AnalysisResults data={failedAnalysis} theme={theme} />
+                )}
+            </div>
         </GlassPanel>
     )
 }
@@ -289,11 +478,20 @@ export default function ReplaysVeiw():JSX.Element{
     const [selectedGame, setSelectedGame] = useState<'zerok' | 'bar'>('zerok')
     const [currentPage, setCurrentPage] = useState(1)
     const replayQuery = trpc.getReplays.useQuery({ game: selectedGame })
+    const analysisStatusQuery = trpc.getReplayAnalysisStatuses.useQuery(undefined, {
+        refetchInterval: 1000,
+        refetchIntervalInBackground: true
+    })
     const replayOpener = trpc.openReplay.useMutation()
     const replays = new Map<string, ReplayData>()
     const [selectedReplay,setSelectedReplay] = useState("");
     const themeColor = useThemeStore((state) => state.themeColor)
     const theme = themeColors[themeColor]
+    const analysisStatuses = analysisStatusQuery.data ?? []
+
+    const getAnalysisStatus = (filename: string): ReplayAnalysisStatusData | undefined => {
+        return analysisStatuses.find((status) => status.filename === filename)
+    }
 
     if(replayQuery.isSuccess && Array.isArray(replayQuery.data.data)){
         replayQuery.data.data.forEach((replay: ReplayData) => replays.set(replay.filename, replay));
@@ -315,6 +513,24 @@ export default function ReplaysVeiw():JSX.Element{
 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+            {analysisStatuses.length > 0 && (
+                <div className="mx-4 mt-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+                    <div className="mb-3 text-sm text-amber-200/90 tracking-wide">
+                            {analysisStatuses.length === 1 ? '1 replay is being analyzed' : `${analysisStatuses.length} replays are being analyzed`}
+                    </div>
+                    <div className="space-y-2">
+                        {analysisStatuses.map((status) => (
+                            <div key={status.filename} className="rounded-lg border border-white/10 bg-black/10 px-3 py-2">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 text-sm text-neutral-200 truncate">{status.filename}</div>
+                                    <AnalysisStatusBadge analysisStatus={status} />
+                                </div>
+                                <AnalysisProgressBar analysisStatus={status} compact />
+                            </div>
+                        ))}
+                        </div>
+                </div>
+            )}
 
             <div className='flex-1 grid grid-cols-3 gap-4 p-4 overflow-hidden min-h-0 min-w-0'>
                 {/* Replay List */}
@@ -343,6 +559,7 @@ export default function ReplaysVeiw():JSX.Element{
                                             replayData={replay}
                                             selected={selected}
                                             theme={theme}
+                                            analysisStatus={getAnalysisStatus(replay.filename)}
                                         />
                                    })
                                ) : (
@@ -426,9 +643,11 @@ export default function ReplaysVeiw():JSX.Element{
                 <div className="overflow-y-auto min-w-0">
                     {selectedReplay && replays.has(selectedReplay) ? (
                         <SelectedReplay
+                            key={selectedReplay}
                             replayData={replays.get(selectedReplay)!}
                             playReplay={replayOpener}
                             theme={theme}
+                            analysisStatus={getAnalysisStatus(selectedReplay)}
                         />
                     ) : (
                         <GlassPanel className="p-6 text-center">

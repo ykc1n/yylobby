@@ -503,9 +503,25 @@ export interface AnalysisResult {
     durationFrames?: number
     events: Array<{ frame: number; type: string; team?: number; unitName?: string; description: string }>
     endGameStats?: { headers: string[]; values: number[][] }
+    firstFactories?: Array<{ name: string; teamId: number; factoryName: string; frame: number; isAI?: boolean }>
+}
+
+export function hasMeaningfulAnalysisData(result: AnalysisResult | null | undefined): boolean {
+    if (!result?.success) {
+        return false
+    }
+
+    return result.players.length > 0 ||
+        result.events.length > 0 ||
+        (result.firstFactories?.length ?? 0) > 0 ||
+        (result.endGameStats?.values.length ?? 0) > 0
 }
 
 export class ReplayAnalyzer {
+    private isFactoryUnitName(unitName: string): boolean {
+        return /(factory|plant|hub|assembly|foundry|platform|shipyard|gantry|lab)/i.test(unitName)
+    }
+
     installWidgets(basePath: string): void {
         const widgetsDir = path.join(basePath, 'LuaUI', 'Widgets')
         fs.mkdirSync(widgetsDir, { recursive: true })
@@ -607,7 +623,10 @@ export class ReplayAnalyzer {
     }
 
     parseEventsLog(content: string): AnalysisResult {
-        const lines = content.split('\n').filter(l => l.trim())
+        const lines = content
+            .split(/\r?\n/)
+            .map((line) => line.trimEnd())
+            .filter((line) => line.trim())
         const players: AnalysisResult['players'] = []
         const events: AnalysisResult['events'] = []
         let winner: string | undefined
@@ -685,13 +704,37 @@ export class ReplayAnalyzer {
             }
         }
 
+        const playerByTeam = new Map(players.map(player => [player.teamId, player] as const))
+        const firstFactoriesByTeam = new Map<number, NonNullable<AnalysisResult['firstFactories']>[number]>()
+
+        for (const event of events) {
+            if (event.type !== 'unit_finished' || event.team == null || !event.unitName) {
+                continue
+            }
+            if (!this.isFactoryUnitName(event.unitName) || firstFactoriesByTeam.has(event.team)) {
+                continue
+            }
+
+            const player = playerByTeam.get(event.team)
+            firstFactoriesByTeam.set(event.team, {
+                name: player?.name ?? `Team ${event.team}`,
+                teamId: event.team,
+                factoryName: event.unitName,
+                frame: event.frame,
+                isAI: player?.isAI
+            })
+        }
+
+        const firstFactories = Array.from(firstFactoriesByTeam.values()).sort((a, b) => a.frame - b.frame)
+
         return {
             success: true,
             players,
             winner,
             durationFrames,
             events,
-            endGameStats: statsHeaders.length > 0 ? { headers: statsHeaders, values: statsValues } : undefined
+            endGameStats: statsHeaders.length > 0 ? { headers: statsHeaders, values: statsValues } : undefined,
+            firstFactories
         }
     }
 }

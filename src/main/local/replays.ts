@@ -3,6 +3,7 @@ import path from 'node:path'
 import { app } from 'electron'
 import { DemoParser } from 'sdfz-demo-parser'
 import type { SettingsManager } from './settings'
+import { hasMeaningfulAnalysisData, type AnalysisResult } from './replay_analyzer'
 
 interface ParsedReplay {
     filename: string
@@ -17,21 +18,53 @@ interface ParsedReplay {
     cachedAt: number  // file mtime when cached
 }
 
-interface ReplayCache {
+export interface ReplayListItem extends ParsedReplay {
+    hasAnalysis: boolean
+}
+
+interface ReplayMetadataCache {
     version: number
     replays: Record<string, ParsedReplay>  // keyed by filename
 }
 
-const CACHE_VERSION = 1
+interface ReplayAnalysisCache {
+    version: number
+    analyses: Record<string, { analysis: AnalysisResult; cachedAt: number; savedAt: number }>
+}
+
+export interface ReplayAnalysisStatus {
+    filename: string
+    status: 'queued' | 'running'
+    queuedAt: number
+    startedAt?: number
+    progress: number
+}
+
+interface ReplayAnalysisJob {
+    filename: string
+    runAnalysis: () => Promise<AnalysisResult>
+    resolve: (result: AnalysisResult) => void
+    reject: (error: unknown) => void
+    queuedAt: number
+}
+
+const REPLAY_CACHE_VERSION = 2
+const ANALYSIS_CACHE_VERSION = 1
 
 export class ReplayManager {
     private settingsManager: SettingsManager
     private cachePath: string
-    private cache: ReplayCache = { version: CACHE_VERSION, replays: {} }
+    private analysisCachePath: string
+    private replayCache: ReplayMetadataCache = { version: REPLAY_CACHE_VERSION, replays: {} }
+    private analysisCache: ReplayAnalysisCache = { version: ANALYSIS_CACHE_VERSION, analyses: {} }
     private replayFiles: Array<{ filename: string; mtime: number; directory: string }> = []
     private parser = new DemoParser()
     private isInitialized = false
     private initPromise: Promise<void> | null = null
+    private analysisQueue: ReplayAnalysisJob[] = []
+    private analysisStatuses = new Map<string, ReplayAnalysisStatus>()
+    private activeAnalysisPromises = new Map<string, Promise<AnalysisResult>>()
+    private isProcessingAnalysisQueue = false
 
     constructor(settingsManager: SettingsManager) {
         this.settingsManager = settingsManager
@@ -39,6 +72,7 @@ export class ReplayManager {
         // Use app.getPath for proper user data location
         const userDataPath = app.getPath('userData')
         this.cachePath = path.join(userDataPath, 'replay-cache.json')
+        this.analysisCachePath = path.join(userDataPath, 'replay-analysis-cache.json')
 
         // Start initialization in background
         this.initPromise = this.initialize()
@@ -55,7 +89,8 @@ export class ReplayManager {
 
     private async initialize(): Promise<void> {
         // Load existing cache from disk
-        this.loadCache()
+        this.loadReplayCache()
+        this.loadAnalysisCache()
 
         // Scan replay directory
         await this.scanReplayDirectory()
@@ -63,16 +98,36 @@ export class ReplayManager {
         this.isInitialized = true
     }
 
-    private loadCache(): void {
+    private loadReplayCache(): void {
         try {
             if (fs.existsSync(this.cachePath)) {
                 const data = fs.readFileSync(this.cachePath, 'utf-8')
-                const loaded = JSON.parse(data) as ReplayCache
+                const loaded = JSON.parse(data) as { version?: number; replays?: Record<string, ParsedReplay>; analyses?: Record<string, { analysis: AnalysisResult; cachedAt: number; savedAt?: number }> }
 
                 // Check cache version compatibility
-                if (loaded.version === CACHE_VERSION) {
-                    this.cache = loaded
-                    console.log(`[ReplayManager] Loaded ${Object.keys(this.cache.replays).length} cached replays`)
+                if (loaded.version === REPLAY_CACHE_VERSION || loaded.version === 1) {
+                    this.replayCache = {
+                        version: REPLAY_CACHE_VERSION,
+                        replays: loaded.replays ?? {}
+                    }
+                    console.log(`[ReplayManager] Loaded ${Object.keys(this.replayCache.replays).length} cached replays`)
+
+                    if (!fs.existsSync(this.analysisCachePath) && loaded.analyses) {
+                        this.analysisCache = {
+                            version: ANALYSIS_CACHE_VERSION,
+                            analyses: Object.fromEntries(
+                                Object.entries(loaded.analyses).map(([filename, entry]) => [
+                                    filename,
+                                    {
+                                        analysis: entry.analysis,
+                                        cachedAt: entry.cachedAt,
+                                        savedAt: entry.savedAt ?? Date.now()
+                                    }
+                                ])
+                            )
+                        }
+                        this.saveAnalysisCache()
+                    }
                 } else {
                     console.log('[ReplayManager] Cache version mismatch, starting fresh')
                 }
@@ -82,11 +137,37 @@ export class ReplayManager {
         }
     }
 
-    private saveCache(): void {
+    private loadAnalysisCache(): void {
         try {
-            fs.writeFileSync(this.cachePath, JSON.stringify(this.cache), 'utf-8')
+            if (fs.existsSync(this.analysisCachePath)) {
+                const data = fs.readFileSync(this.analysisCachePath, 'utf-8')
+                const loaded = JSON.parse(data) as ReplayAnalysisCache
+                if (loaded.version === ANALYSIS_CACHE_VERSION) {
+                    this.analysisCache = {
+                        version: ANALYSIS_CACHE_VERSION,
+                        analyses: loaded.analyses ?? {}
+                    }
+                    console.log(`[ReplayManager] Loaded ${Object.keys(this.analysisCache.analyses).length} cached replay analyses`)
+                }
+            }
+        } catch (error) {
+            console.error('[ReplayManager] Failed to load analysis cache:', error)
+        }
+    }
+
+    private saveReplayCache(): void {
+        try {
+            fs.writeFileSync(this.cachePath, JSON.stringify(this.replayCache), 'utf-8')
         } catch (error) {
             console.error('[ReplayManager] Failed to save cache:', error)
+        }
+    }
+
+    private saveAnalysisCache(): void {
+        try {
+            fs.writeFileSync(this.analysisCachePath, JSON.stringify(this.analysisCache), 'utf-8')
+        } catch (error) {
+            console.error('[ReplayManager] Failed to save analysis cache:', error)
         }
     }
 
@@ -134,7 +215,7 @@ export class ReplayManager {
         console.log(`[ReplayManager] Game set to: ${game}`)
     }
 
-    async getCurrentPage(): Promise<ParsedReplay[]> {
+    async getCurrentPage(): Promise<ReplayListItem[]> {
         // Wait for initialization if needed
         if (!this.isInitialized && this.initPromise) {
             await this.initPromise
@@ -149,7 +230,7 @@ export class ReplayManager {
         // Check which replays are already cached and still valid
         for (let i = 0; i < filesToProcess.length; i++) {
             const { filename, mtime, directory } = filesToProcess[i]
-            const cached = this.cache.replays[filename]
+            const cached = this.replayCache.replays[filename]
 
             if (cached && cached.cachedAt >= mtime) {
                 // Cache is valid
@@ -181,7 +262,7 @@ export class ReplayManager {
                     const parsed = this.extractReplayData(filename, mtime, replay)
 
                     results[index] = parsed
-                    this.cache.replays[filename] = parsed
+                    this.replayCache.replays[filename] = parsed
                     cacheUpdated = true
                 } else {
                     console.error(`[ReplayManager] Failed to parse ${filename}:`, result.reason)
@@ -190,12 +271,173 @@ export class ReplayManager {
 
             // Save updated cache to disk
             if (cacheUpdated) {
-                this.saveCache()
+                this.saveReplayCache()
             }
         }
 
         // Filter out any gaps (failed parses)
-        return results.filter(Boolean)
+        return results
+            .filter(Boolean)
+            .map((replay) => ({
+                ...replay,
+                hasAnalysis: this.getReplayAnalysis(replay.filename) !== null
+            }))
+    }
+
+    getReplayAnalysis(filename: string): AnalysisResult | null {
+        const replayFile = this.replayFiles.find((file) => file.filename === filename)
+        const cachedAnalysis = this.analysisCache.analyses[filename]
+
+        if (!replayFile || !cachedAnalysis) {
+            return null
+        }
+
+        if (cachedAnalysis.cachedAt < replayFile.mtime) {
+            delete this.analysisCache.analyses[filename]
+            this.saveAnalysisCache()
+            return null
+        }
+
+        if (!hasMeaningfulAnalysisData(cachedAnalysis.analysis)) {
+            delete this.analysisCache.analyses[filename]
+            this.saveAnalysisCache()
+            return null
+        }
+
+        return cachedAnalysis.analysis
+    }
+
+    saveReplayAnalysis(filename: string, analysis: AnalysisResult): void {
+        const replayFile = this.replayFiles.find((file) => file.filename === filename)
+        if (!replayFile) {
+            return
+        }
+
+        if (!hasMeaningfulAnalysisData(analysis)) {
+            delete this.analysisCache.analyses[filename]
+            this.saveAnalysisCache()
+            return
+        }
+
+        this.analysisCache.analyses[filename] = {
+            analysis,
+            cachedAt: replayFile.mtime,
+            savedAt: Date.now()
+        }
+        this.saveAnalysisCache()
+    }
+
+    getReplayAnalysisStatuses(): ReplayAnalysisStatus[] {
+        return Array.from(this.analysisStatuses.values()).sort((a, b) => {
+            if (a.status !== b.status) {
+                return a.status === 'running' ? -1 : 1
+            }
+            return a.queuedAt - b.queuedAt
+        }).map((status, index) => ({
+            ...status,
+            progress: this.getAnalysisProgress(status, index)
+        }))
+    }
+
+    getReplayAnalysisCacheInfo(): { sizeBytes: number; entryCount: number } {
+        let sizeBytes = 0
+
+        try {
+            if (fs.existsSync(this.analysisCachePath)) {
+                sizeBytes = fs.statSync(this.analysisCachePath).size
+            } else {
+                sizeBytes = Buffer.byteLength(JSON.stringify(this.analysisCache), 'utf-8')
+            }
+        } catch (error) {
+            console.error('[ReplayManager] Failed to read analysis cache size:', error)
+        }
+
+        return {
+            sizeBytes,
+            entryCount: Object.keys(this.analysisCache.analyses).length
+        }
+    }
+
+    clearReplayAnalysisCache(): { success: true } {
+        this.analysisCache = {
+            version: ANALYSIS_CACHE_VERSION,
+            analyses: {}
+        }
+        this.saveAnalysisCache()
+        return { success: true }
+    }
+
+    async enqueueReplayAnalysis(filename: string, runAnalysis: () => Promise<AnalysisResult>): Promise<AnalysisResult> {
+        const existing = this.activeAnalysisPromises.get(filename)
+        if (existing) {
+            return existing
+        }
+
+        const queuedAt = Date.now()
+        const promise = new Promise<AnalysisResult>((resolve, reject) => {
+            this.analysisQueue.push({ filename, runAnalysis, resolve, reject, queuedAt })
+        })
+
+        this.activeAnalysisPromises.set(filename, promise)
+        this.analysisStatuses.set(filename, {
+            filename,
+            status: 'queued',
+            queuedAt,
+            progress: 6
+        })
+
+        void this.processAnalysisQueue()
+        return promise
+    }
+
+    private async processAnalysisQueue(): Promise<void> {
+        if (this.isProcessingAnalysisQueue) {
+            return
+        }
+
+        this.isProcessingAnalysisQueue = true
+        try {
+            while (this.analysisQueue.length > 0) {
+                const job = this.analysisQueue.shift()
+                if (!job) {
+                    continue
+                }
+
+                const startedAt = Date.now()
+                this.analysisStatuses.set(job.filename, {
+                    filename: job.filename,
+                    status: 'running',
+                    queuedAt: job.queuedAt,
+                    startedAt,
+                    progress: 15
+                })
+
+                try {
+                    const analysis = await job.runAnalysis()
+                    if (hasMeaningfulAnalysisData(analysis)) {
+                        this.saveReplayAnalysis(job.filename, analysis)
+                    }
+                    job.resolve(analysis)
+                } catch (error) {
+                    job.reject(error)
+                } finally {
+                    this.analysisStatuses.delete(job.filename)
+                    this.activeAnalysisPromises.delete(job.filename)
+                }
+            }
+        } finally {
+            this.isProcessingAnalysisQueue = false
+        }
+    }
+
+    private getAnalysisProgress(status: ReplayAnalysisStatus, queueIndex: number): number {
+        if (status.status === 'queued') {
+            return Math.max(4, 10 - (queueIndex * 2))
+        }
+
+        const elapsedMs = status.startedAt ? Math.max(0, Date.now() - status.startedAt) : 0
+        const easedProgress = 18 + ((1 - Math.exp(-elapsedMs / 12000)) * 74)
+        return Math.min(94, Math.round(easedProgress))
     }
 
     private extractReplayData(filename: string, mtime: number, replay: any): ParsedReplay {
