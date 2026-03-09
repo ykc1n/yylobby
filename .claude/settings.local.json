@@ -12,7 +12,8 @@
     "additionalDirectories": [
       "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Zero-K\\games\\therxlobby.sdd",
       "C:\\Program Files\\Beyond-All-Reason\\data\\games\\Beyond-All-Reason",
-      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Zero-K\\games\\zk.sdd"
+      "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Zero-K\\games\\zk.sdd",
+      "C:\\Users\\Nick\\Projects\\zkstats"
     ]
   }
 }

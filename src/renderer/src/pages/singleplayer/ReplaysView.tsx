@@ -95,6 +95,98 @@ function Replay(props:{
 }
 
 
+function frameToTime(frame: number): string {
+    const totalSeconds = Math.floor(frame / 30)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+interface AnalysisResultData {
+    success: boolean
+    error?: string
+    players: Array<{ name: string; teamId: number; elo: number; isAI?: boolean }>
+    winner?: string
+    durationFrames?: number
+    events: Array<{ frame: number; type: string; team?: number; unitName?: string; description: string }>
+    endGameStats?: { headers: string[]; values: number[][] }
+}
+
+function AnalysisResults({ data, theme }: { data: AnalysisResultData; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
+    if (!data.success) {
+        return (
+            <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                Analysis failed: {data.error}
+            </div>
+        )
+    }
+
+    return (
+        <div className="mt-3 space-y-3">
+            {/* Players */}
+            {data.players.length > 0 && (
+                <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10">
+                    <div className="text-[10px] tracking-wide text-neutral-500 uppercase mb-2">Players</div>
+                    <div className="space-y-1">
+                        {data.players.map((p) => (
+                            <div key={`${p.name}-${p.teamId}`} className={`flex items-center justify-between text-sm ${data.winner && p.name === data.winner ? 'text-emerald-400' : 'text-neutral-300'}`}>
+                                <span className="truncate">
+                                    {p.name}
+                                    {p.isAI && <span className="text-neutral-600 text-xs ml-1">(AI)</span>}
+                                    {data.winner && p.name === data.winner && <span className="text-emerald-500 text-xs ml-1">Winner</span>}
+                                </span>
+                                <span className="text-neutral-500 text-xs ml-2">Team {p.teamId} · {p.elo} ELO</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Duration */}
+            {data.durationFrames && (
+                <div className="text-xs text-neutral-500">
+                    Game duration: {frameToTime(data.durationFrames)}
+                </div>
+            )}
+
+            {/* Key Events */}
+            {data.events.length > 0 && (
+                <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10">
+                    <div className="text-[10px] tracking-wide text-neutral-500 uppercase mb-2">Events ({data.events.length})</div>
+                    <div className="max-h-48 overflow-y-auto space-y-0.5">
+                        {data.events.slice(0, 200).map((evt, i) => (
+                            <div key={i} className="flex gap-2 text-xs">
+                                <span className={`${theme.text} font-mono shrink-0 w-12 text-right`}>{frameToTime(evt.frame)}</span>
+                                <span className="text-neutral-400 truncate">{evt.description}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* End Game Stats Summary */}
+            {data.endGameStats && data.endGameStats.values.length > 0 && (
+                <div className="p-3 rounded-lg bg-neutral-800/50 border border-white/10">
+                    <div className="text-[10px] tracking-wide text-neutral-500 uppercase mb-2">End Game Stats</div>
+                    <div className="max-h-32 overflow-y-auto">
+                        <div className="text-xs text-neutral-500 font-mono">
+                            {data.endGameStats.headers.slice(0, 10).map((h, i) => {
+                                const lastRow = data.endGameStats!.values[data.endGameStats!.values.length - 1]
+                                return (
+                                    <div key={i} className="flex justify-between">
+                                        <span className="truncate mr-2">{h}</span>
+                                        <span className="text-neutral-300">{lastRow?.[i]?.toFixed(0) ?? '-'}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
 function SelectedReplay(props:{
     replayData:ReplayData
     playReplay: ReturnType<typeof trpc.openReplay.useMutation>
@@ -104,6 +196,7 @@ function SelectedReplay(props:{
     const winners = props.replayData.winners?.[0]
     const durationMinutes = Math.floor(props.replayData.duration / 60000)
     const theme = props.theme
+    const analyzeReplay = trpc.analyzeReplay.useMutation()
 
     const teamDivs = Object.entries(teams).map(([teamId, teamPlayers]) => (
         <div className={`flex flex-col gap-0.5 p-2.5 rounded-lg border ${Number(teamId) === winners ? 'text-emerald-400/80 border-emerald-500/10 bg-emerald-500/[0.03]' : 'text-red-400/70 border-red-500/10 bg-red-500/[0.03]'}`} key={teamId}>
@@ -118,6 +211,10 @@ function SelectedReplay(props:{
 
     const handlePlayReplay = ():void=>{
         props.playReplay.mutate({filename:props.replayData.filename})
+    }
+
+    const handleAnalyze = (): void => {
+        analyzeReplay.mutate({ filename: props.replayData.filename })
     }
 
     return (
@@ -155,6 +252,33 @@ function SelectedReplay(props:{
                 </svg>
                 Play Replay
             </button>
+
+            <button
+                onClick={handleAnalyze}
+                disabled={analyzeReplay.isPending}
+                className={`w-full py-2.5 mt-2 bg-neutral-700/50 hover:bg-neutral-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-normal tracking-[0.1em] uppercase rounded-lg transition-all duration-200 border border-white/10`}
+            >
+                {analyzeReplay.isPending ? (
+                    <>
+                        <div
+                            className="w-4 h-4 inline-block mr-2 -mt-0.5 border-2 rounded-full animate-spin"
+                            style={{ borderColor: `rgba(${theme.rgb}, 0.2)`, borderTopColor: `rgba(${theme.rgb}, 0.8)` }}
+                        />
+                        Analyzing...
+                    </>
+                ) : (
+                    <>
+                        <svg className="w-4 h-4 inline-block mr-2 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Analyze
+                    </>
+                )}
+            </button>
+
+            {analyzeReplay.data && (
+                <AnalysisResults data={analyzeReplay.data as AnalysisResultData} theme={theme} />
+            )}
         </GlassPanel>
     )
 }

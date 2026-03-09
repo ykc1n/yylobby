@@ -160,6 +160,15 @@ export const appRouter = t.router({
     return { success: true }
   }),
 
+  analyzeReplay: t.procedure
+    .input(z.object({ filename: z.string() }))
+    .mutation(async (opts) => {
+      const replayPath = path.join(opts.ctx.replayManager.getBaseReplayPath(), opts.input.filename)
+      const engineDir = await opts.ctx.zk_launcher.getEngineDir(replayPath)
+      if (!engineDir) return { success: false as const, error: 'Could not find engine for this replay', players: [] as never[], events: [] as never[] }
+      return await opts.ctx.replayAnalyzer.analyzeReplay(replayPath, opts.ctx.zk_launcher.basePath, engineDir)
+    }),
+
   // Browse for directory (opens native dialog)
   browseForDirectory: t.procedure.mutation(async () => {
     const { dialog } = await import('electron')

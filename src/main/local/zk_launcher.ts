@@ -364,52 +364,55 @@ export class ZkLauncher{
         return { success: true }
     }
 
+    async resolveEngineForReplay(replaypath: string): Promise<{ enginePath: string; mapName: string; modName: string; version: string } | null> {
+        if(!replaypath.endsWith(".sdfz")){
+            console.log("Invalid replay (does not end with sdfz)")
+            return null
+        }
+        if(!fs.existsSync(replaypath)){
+            console.log(`Filepath does not exist: ${replaypath}`)
+            return null
+        }
+        const parser = new DemoParser()
+        const demo = await parser.parseDemo(replaypath)
+
+        const mapName = demo.info.meta.map
+        const modName = demo.info.meta.game
+        const version = demo.header.versionString
+
+        this.findEngines()
+        if (version.startsWith('2') && (version.match(/\./g)?.length == 2)){
+            if(this.engines.has(version)){
+                return { enginePath: this.engines.get(version), mapName, modName, version }
+            } else {
+                console.log("cant find engine for version", version)
+                return null
+            }
+        } else {
+            console.log("old version detected, not supported")
+            return null
+        }
+    }
+
+    async getEngineDir(replaypath: string): Promise<string | null> {
+        try {
+            const resolved = await this.resolveEngineForReplay(replaypath)
+            return resolved?.enginePath ?? null
+        } catch (error) {
+            console.error("Error resolving engine for replay:", error)
+            return null
+        }
+    }
+
     async start_replay(replaypath: string):Promise<void>{
         try {
             console.log("start_replay called with:", replaypath)
-            if(!replaypath.endsWith(".sdfz")){
-                console.log("Invalid replay (does not end with sdfz)")
-                return 
-            }
-            if(!fs.existsSync(replaypath)){
-                console.log(`Filepath does not exist: ${replaypath}`)
-                return
-            }
-            console.log("parsing!")
-            const parser = new DemoParser()
+            const resolved = await this.resolveEngineForReplay(replaypath)
+            if (!resolved) return
 
-            const demo = await parser.parseDemo(replaypath)
-
-            const mapname = demo.info.meta.map
-            const modname = demo.info.meta.game
-            const version = demo.header.versionString
+            const { enginePath: engine, mapName: mapname, modName: modname, version } = resolved
             console.log(`map name: ${mapname}, mod name: ${modname} version ${version}`)
-            console.log(version.match(/\./))
-            //new version check
-            this.findEngines()
-            let engine = ''
-            if (version.startsWith('2') && (version.match(/\./g)?.length == 2)){
-                console.log(`clocked as new version ${version}`)
-                const subversions = version.split('.')
-                const releaseID = `rel${subversions[0].slice(2)}${subversions[1]}`
-                const enginedir = `${releaseID}.${version}`
-                console.log(enginedir)
-                console.log(this.engines)
 
-                if(this.engines.has(version)){
-                    engine = this.engines.get(version)
-                    console.log("found engine omg")
-                } else {
-                    console.log("cant find engine")
-                    return
-                }
-
-
-                
-            } else {
-                console.log("old version detected lol lemme implement that waa")
-                return
-            }
             this.parseCache()
             if(!this.maps.has(mapname)){
                 console.log("map not available")
@@ -419,15 +422,13 @@ export class ZkLauncher{
                 console.log("game not availabe")
             }
 
-            
             const enginefullpath = path.join(engine, this.engine_binary)
-            if(fs.existsSync(enginefullpath)){
+            if(!fs.existsSync(enginefullpath)){
                 console.log("does not exist")
                 return
             }
             const runcmd = `"${enginefullpath}" --isolation --write-dir "${path.join(this.basePath)}"`
             console.log(runcmd)
-            // console.log("Launching engine for replay with: "+runcmd)
             const child = spawn(`${enginefullpath}`,["--isolation","--write-dir",`${path.join(this.basePath)}`, `${replaypath}`],{detached:true, stdio:'ignore'})
             child.unref();
             child.on('error', error=>console.log('error rip: '+error))
@@ -436,7 +437,6 @@ export class ZkLauncher{
             console.error("Error parsing replay file:", error.message)
             console.log("This appears to be an issue with the sdfz-demo-parser library")
             console.log("The replay file exists but contains data that the parser cannot handle")
-            // Don't re-throw the error so the app doesn't crash
         }
     }
 
