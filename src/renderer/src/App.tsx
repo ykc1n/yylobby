@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HashRouter, Routes, Route, NavLink } from 'react-router-dom'
 import HomePage from './pages/homepage'
 import MultiplayerPage from './pages/multiplayer/MultiplayerPage'
 import SingleplayerPage from './pages/singleplayer/SingleplayerPage'
 import SettingsPage from './pages/SettingsPage'
+import DownloadsPage from './pages/DownloadsPage'
 import { useThemeStore, themeColors } from './themeStore'
 import { useStateSync } from './hooks/useStateSync'
 import { useConnectionStatus, useAuth } from './store/appStore'
 import { useActions } from './hooks/useActions'
+import { trpc } from '../utils/trpc'
 import lobbyBg from './assets/lol.png'
 
 console.log('App loaded!')
@@ -191,8 +193,23 @@ function App(): JSX.Element {
   useStateSync()
 
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const previousHadActiveDownloads = useRef(false)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
+  const utils = trpc.useUtils()
+  const downloadsQuery = trpc.getDownloadStatuses.useQuery(undefined, {
+    refetchInterval: 1000,
+    refetchIntervalInBackground: true
+  })
+  const hasActiveDownloads = (downloadsQuery.data ?? []).some((download) => download.status === 'queued' || download.status === 'running')
+
+  useEffect(() => {
+    if (previousHadActiveDownloads.current && !hasActiveDownloads) {
+      void utils.getReplays.invalidate()
+      void utils.getAvailableMaps.invalidate()
+    }
+    previousHadActiveDownloads.current = hasActiveDownloads
+  }, [hasActiveDownloads, utils])
 
   const navLinkClass = ({ isActive }: { isActive: boolean }): string => {
     if (isActive) {
@@ -214,6 +231,12 @@ function App(): JSX.Element {
             </NavLink>
             <NavLink to="/Multiplayer" className={navLinkClass}>
               Multiplayer
+            </NavLink>
+            <NavLink to="/Downloads" className={navLinkClass}>
+              <span className="relative inline-flex items-center gap-2">
+                Downloads
+                {hasActiveDownloads && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+              </span>
             </NavLink>
           </div>
 
@@ -238,6 +261,7 @@ function App(): JSX.Element {
           <Routes>
             <Route path="/Multiplayer" element={<MultiplayerPage />} />
             <Route path="/Singleplayer/*" element={<SingleplayerPage />} />
+            <Route path="/Downloads" element={<DownloadsPage />} />
             <Route path="/Settings" element={<SettingsPage />} />
             <Route path="/" element={<HomePage />} />
           </Routes>

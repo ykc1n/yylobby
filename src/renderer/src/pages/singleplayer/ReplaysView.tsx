@@ -115,6 +115,7 @@ function Replay(props:{
                     thumbnailPath={props.replayData.mapThumbnailPath}
                     className="w-14 h-14 rounded-lg flex-shrink-0"
                     iconClassName="w-6 h-6 text-neutral-600"
+                    compactFallback
                 />
 
                 {/* Replay Info */}

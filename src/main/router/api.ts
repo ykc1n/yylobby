@@ -182,9 +182,20 @@ export const appRouter = t.router({
     }),
 
   testDownload: t.procedure.mutation(async (opts) => {
-    opts.ctx.zerokDownloader.testDownload()
+    await opts.ctx.zerokDownloader.testDownload()
     return { success: true }
   }),
+
+  getDownloadStatuses: t.procedure
+    .query((opts) => {
+      return opts.ctx.zerokDownloader.getDownloadStatuses()
+    }),
+
+  queueMapThumbnailDownload: t.procedure
+    .input(z.object({ mapName: z.string() }))
+    .mutation(async (opts) => {
+      return await opts.ctx.zerokDownloader.queueMapThumbnailDownload(opts.input.mapName)
+    }),
 
   analyzeReplay: t.procedure
     .input(z.object({ filename: z.string() }))

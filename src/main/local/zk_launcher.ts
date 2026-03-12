@@ -15,8 +15,6 @@ TODO:
 */
 export class ZkLauncher{
     private settingsManager: SettingsManager
-    private mapThumbnailIndex = new Map<string, string>()
-    private mapThumbnailIndexBasePath = ''
     platform = "win64"
     engine_binary = "spring"
     engines = new Map()
@@ -230,11 +228,15 @@ export class ZkLauncher{
     }
 
     getMapThumbnailPath(mapName: string): string | null {
-        this.ensureMapThumbnailIndex()
+        const thumbnailDirectory = this.getMapThumbnailDirectory()
+        if (!fs.existsSync(thumbnailDirectory)) {
+            return null
+        }
 
-        for (const candidate of this.getMapThumbnailLookupKeys(mapName)) {
-            const thumbnailPath = this.mapThumbnailIndex.get(candidate)
-            if (thumbnailPath) {
+        const thumbnailBaseName = mapName.trim().replace(/ /g, '_')
+        for (const extension of ['.jpg', '.jpeg', '.png', '.dds']) {
+            const thumbnailPath = path.join(thumbnailDirectory, `${thumbnailBaseName}${extension}`)
+            if (fs.existsSync(thumbnailPath)) {
                 return thumbnailPath
             }
         }
@@ -456,52 +458,8 @@ export class ZkLauncher{
         }
     }
 
-    private ensureMapThumbnailIndex(): void {
-        if (this.mapThumbnailIndexBasePath === this.basePath && this.mapThumbnailIndex.size > 0) {
-            return
-        }
-
-        this.mapThumbnailIndex.clear()
-        this.mapThumbnailIndexBasePath = this.basePath
-
-        const thumbnailDirectories = [
-            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
-            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride'),
-            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
-            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride')
-        ]
-
-        for (const directory of thumbnailDirectories) {
-            if (!fs.existsSync(directory)) {
-                continue
-            }
-
-            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-                if (!entry.isFile()) {
-                    continue
-                }
-
-                const extension = path.extname(entry.name).toLowerCase()
-                if (!['.png', '.jpg', '.jpeg', '.dds'].includes(extension)) {
-                    continue
-                }
-
-                const key = path.basename(entry.name, extension).toLowerCase()
-                if (!this.mapThumbnailIndex.has(key)) {
-                    this.mapThumbnailIndex.set(key, path.join(directory, entry.name))
-                }
-            }
-        }
-    }
-
-    private getMapThumbnailLookupKeys(mapName: string): string[] {
-        const normalizedWhitespace = mapName.trim().replace(/\s+/g, ' ')
-        return Array.from(new Set([
-            normalizedWhitespace.toLowerCase(),
-            normalizedWhitespace.replace(/\s+/g, '_').toLowerCase(),
-            normalizedWhitespace.replace(/[^\w.-]+/g, '_').toLowerCase(),
-            normalizedWhitespace.replace(/\s+/g, '').toLowerCase()
-        ]))
+    private getMapThumbnailDirectory(): string {
+        return path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail')
     }
 
 
