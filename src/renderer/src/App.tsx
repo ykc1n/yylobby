@@ -1,13 +1,15 @@
-import { useState } from 'react'
-import { HashRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
 import HomePage from './pages/homepage'
 import MultiplayerPage from './pages/multiplayer/MultiplayerPage'
 import SingleplayerPage from './pages/singleplayer/SingleplayerPage'
 import SettingsPage from './pages/SettingsPage'
+import ExtendPage from './pages/ExtendPage'
 import { useThemeStore, themeColors } from './themeStore'
 import { useStateSync } from './hooks/useStateSync'
 import { useConnectionStatus, useAuth } from './store/appStore'
 import { useActions } from './hooks/useActions'
+import { trpc } from '../utils/trpc'
 import lobbyBg from './assets/lol.png'
 
 console.log('App loaded!')
@@ -191,8 +193,23 @@ function App(): JSX.Element {
   useStateSync()
 
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const previousHadActiveDownloads = useRef(false)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
+  const utils = trpc.useUtils()
+  const downloadsQuery = trpc.getDownloadStatuses.useQuery(undefined, {
+    refetchInterval: 1000,
+    refetchIntervalInBackground: true
+  })
+  const hasActiveDownloads = (downloadsQuery.data ?? []).some((download) => download.status === 'queued' || download.status === 'running')
+
+  useEffect(() => {
+    if (previousHadActiveDownloads.current && !hasActiveDownloads) {
+      void utils.getReplays.invalidate()
+      void utils.getAvailableMaps.invalidate()
+    }
+    previousHadActiveDownloads.current = hasActiveDownloads
+  }, [hasActiveDownloads, utils])
 
   const navLinkClass = ({ isActive }: { isActive: boolean }): string => {
     if (isActive) {
@@ -203,9 +220,16 @@ function App(): JSX.Element {
 
   return (
     <HashRouter>
-      <div className="dark h-screen flex flex-col bg-neutral-950 bg-cover bg-center bg-no-repeat text-white" style={{ backgroundImage: `url(${lobbyBg})` }}>
-        <div className="bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center justify-between shadow-lg shadow-black/20">
-          <div className="flex">
+      <div className="dark h-screen flex flex-col bg-neutral-950 text-white relative overflow-hidden">
+        {/* Background gradients */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-[30%] -left-[10%] w-[60%] h-[60%] rounded-full bg-pink-600/15 blur-[120px]" />
+          <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-fuchsia-500/10 blur-[120px]" />
+          <div className="absolute top-[40%] right-[20%] w-[30%] h-[30%] rounded-full bg-rose-500/8 blur-[100px]" />
+        </div>
+        <div className="relative z-10 shrink-0 bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] grid grid-cols-3 items-center shadow-lg shadow-black/20">
+          <div />
+          <div className="flex justify-center">
             <NavLink to="/" className={navLinkClass}>
               Home
             </NavLink>
@@ -215,9 +239,15 @@ function App(): JSX.Element {
             <NavLink to="/Multiplayer" className={navLinkClass}>
               Multiplayer
             </NavLink>
+            <NavLink to="/Customize" className={navLinkClass}>
+              <span className="relative inline-flex items-center gap-2">
+                Customize
+                {hasActiveDownloads && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+              </span>
+            </NavLink>
           </div>
 
-          <div className="flex items-center gap-3 px-4">
+          <div className="flex items-center justify-end gap-3 px-4">
             <ProfileButton onLoginClick={() => setShowLoginModal(true)} />
             <div className="w-px h-5 bg-white/10" />
             <ConnectionIndicator />
@@ -234,10 +264,13 @@ function App(): JSX.Element {
           </div>
         </div>
         <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-        <div className="flex-1 overflow-hidden">
+        <div className="relative z-10 flex-1 min-h-0 overflow-hidden">
           <Routes>
             <Route path="/Multiplayer" element={<MultiplayerPage />} />
             <Route path="/Singleplayer/*" element={<SingleplayerPage />} />
+            <Route path="/Customize/*" element={<ExtendPage />} />
+            <Route path="/Extend/*" element={<Navigate to="/Customize/Widgets" replace />} />
+            <Route path="/Downloads" element={<Navigate to="/Customize/Downloads" replace />} />
             <Route path="/Settings" element={<SettingsPage />} />
             <Route path="/" element={<HomePage />} />
           </Routes>

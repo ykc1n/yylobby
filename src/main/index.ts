@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, protocol, net } from 'electron'
 import { join } from 'path'
+import { pathToFileURL } from 'node:url'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon1.png?asset'
 import { ZerokLobbyState } from './ZerokLobbyState'
@@ -13,6 +14,18 @@ import { ZerokDownloader } from './local/ZeroKDownloader'
 import { ReplayAnalyzer } from './local/replay_analyzer'
 console.log('[Main] Starting application')
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'local-file',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true
+    }
+  }
+])
+
 // Create singleton instances - these exist for the lifetime of the app
 export const settingsManager = new SettingsManager()
 export const lobbyState = new ZerokLobbyState()
@@ -20,13 +33,14 @@ export const connection = new ZerokConnection()
 export const lobbyInterface = new ZerokLobbyInterface(connection, lobbyState)
 export const replayManager = new ReplayManager(settingsManager)
 export const zk_launcher = new ZkLauncher(settingsManager)
-export const zerokDownloader = new ZerokDownloader()
+export const zerokDownloader = new ZerokDownloader(settingsManager)
 export const replayAnalyzer = new ReplayAnalyzer()
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     resizable: true,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: '#050505',
     ...(process.platform === 'linux' ? { icon } : { icon }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -53,6 +67,18 @@ function createWindow(): void {
   }
 }
 
+function registerLocalFileProtocol(): void {
+  protocol.handle('local-file', (request) => {
+    const url = new URL(request.url)
+    const filePath = url.searchParams.get('path')
+    if (!filePath) {
+      return new Response('Missing path', { status: 400 })
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString())
+  })
+}
+
 // Debug window for viewing lobby state in real-time (development only)
 function createDebugWindow(): void {
   const debugWindow = new BrowserWindow({
@@ -62,6 +88,7 @@ function createDebugWindow(): void {
     resizable: true,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: '#050505',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -84,6 +111,7 @@ function createDebugWindow(): void {
 // initialization and is ready to create browser windows.
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
+  registerLocalFileProtocol()
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

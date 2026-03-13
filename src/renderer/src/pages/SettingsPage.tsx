@@ -100,7 +100,7 @@ export default function SettingsPage(): JSX.Element {
   }
 
   return (
-    <div className="min-h-[calc(100vh-52px)] p-6">
+    <div className="h-full overflow-auto p-6">
       <div className="max-w-xl mx-auto">
         {/* Header */}
         <GlassPanel className="mb-6 p-6 rounded-2xl">

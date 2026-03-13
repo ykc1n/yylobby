@@ -114,7 +114,7 @@ export function ChatPanel(): JSX.Element {
     y: 0,
     username: ''
   })
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const themeColor = useThemeStore((state) => state.themeColor)
   const theme = themeColors[themeColor]
 
@@ -169,9 +169,10 @@ export function ChatPanel(): JSX.Element {
   }
   console.log(users)
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
   }, [messages.length])
 
   const handleSend = (): void => {
@@ -298,7 +299,7 @@ export function ChatPanel(): JSX.Element {
       <div className="flex-1 flex min-h-0">
         {/* Messages Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-2.5">
             {messages.length === 0 ? (
               <div className="text-center text-neutral-600 text-sm py-8">
                 {activeChannel ? 'No messages yet' : 'Join a channel to chat'}
@@ -326,7 +327,6 @@ export function ChatPanel(): JSX.Element {
                 </div>
               ))
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}

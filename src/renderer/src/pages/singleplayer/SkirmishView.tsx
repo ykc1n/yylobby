@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useThemeStore, themeColors } from '../../themeStore'
 import { GlassPanel } from '@renderer/components/panels'
 import { trpc } from '../../../utils/trpc'
@@ -140,10 +140,12 @@ function TeamBox({ team, theme, onJoin, onAddBot, onSetBotAI, isMyTeam, availabl
 
 function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
   const [inputValue, setInputValue] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
   }, [messages.length])
 
   const handleSend = (): void => {
@@ -166,7 +168,7 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
         <h3 className="text-sm font-normal text-neutral-300 tracking-[0.1em] uppercase">Battle Chat</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className="group">
             <div className="flex items-baseline gap-2 mb-0.5">
@@ -178,7 +180,6 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
             <p className="text-sm text-neutral-400 leading-relaxed break-words">{msg.text}</p>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
       {/* yes no vote */}
       <div className="p-3 border-t border-white/[0.06]">
@@ -212,7 +213,33 @@ export default function BattleRoom(): JSX.Element {
 
   const [selectedMap, setSelectedMap] = useState('Speed Metal')
   const [startError, setStartError] = useState<string | null>(null)
+  const [mapDropdownOpen, setMapDropdownOpen] = useState(false)
+  const [mapSearch, setMapSearch] = useState('')
+  const mapDropdownRef = useRef<HTMLDivElement>(null)
+  const mapSearchRef = useRef<HTMLInputElement>(null)
   const selectedMapData = availableMaps.find((map) => map.name === selectedMap)
+
+  const filteredMaps = useMemo(() => {
+    const q = mapSearch.toLowerCase()
+    return q ? availableMaps.filter((m) => m.name.toLowerCase().includes(q)) : availableMaps
+  }, [availableMaps, mapSearch])
+
+  useEffect(() => {
+    if (mapDropdownOpen && mapSearchRef.current) {
+      mapSearchRef.current.focus()
+    }
+  }, [mapDropdownOpen])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent): void {
+      if (mapDropdownRef.current && !mapDropdownRef.current.contains(e.target as Node)) {
+        setMapDropdownOpen(false)
+        setMapSearch('')
+      }
+    }
+    if (mapDropdownOpen) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [mapDropdownOpen])
 
   const battleInfo = {
     map: selectedMap,
@@ -337,19 +364,50 @@ export default function BattleRoom(): JSX.Element {
           {/* Map Info */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <select
-                value={selectedMap}
-                onChange={(e) => setSelectedMap(e.target.value)}
-                className="text-sm font-medium bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-white focus:outline-none focus:border-white/[0.15] cursor-pointer max-w-[200px] truncate"
-              >
-                {availableMaps.length === 0 ? (
-                  <option value={selectedMap}>{selectedMap}</option>
-                ) : (
-                  availableMaps.map((m) => (
-                    <option key={m.name} value={m.name}>{m.name}</option>
-                  ))
+              <div className="relative" ref={mapDropdownRef}>
+                <button
+                  onClick={() => { setMapDropdownOpen(!mapDropdownOpen); setMapSearch('') }}
+                  className="text-sm font-medium bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 text-white focus:outline-none focus:border-white/[0.15] cursor-pointer max-w-[240px] truncate flex items-center gap-1.5"
+                >
+                  <span className="truncate">{selectedMap}</span>
+                  <svg className="w-3 h-3 text-neutral-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {mapDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-64 max-h-60 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.12] rounded-lg shadow-2xl shadow-black/50 z-50 flex flex-col overflow-hidden">
+                    <div className="p-1.5">
+                      <input
+                        ref={mapSearchRef}
+                        type="text"
+                        value={mapSearch}
+                        onChange={(e) => setMapSearch(e.target.value)}
+                        placeholder="Search maps..."
+                        className="w-full px-2.5 py-1.5 text-xs text-neutral-200 placeholder-neutral-600 bg-neutral-800/60 border border-white/10 rounded outline-none focus:border-white/20"
+                      />
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
+                      {filteredMaps.length === 0 ? (
+                        <div className="px-3 py-2 text-xs text-neutral-600">No maps found</div>
+                      ) : (
+                        filteredMaps.map((m) => (
+                          <button
+                            key={m.name}
+                            onClick={() => { setSelectedMap(m.name); setMapDropdownOpen(false); setMapSearch('') }}
+                            className={`w-full text-left px-3 py-1.5 text-sm transition-colors truncate ${
+                              m.name === selectedMap
+                                ? `${theme.text} bg-white/[0.06]`
+                                : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                            }`}
+                          >
+                            {m.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
-              </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-neutral-500">
               <div className="flex justify-between">

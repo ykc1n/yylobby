@@ -15,8 +15,6 @@ TODO:
 */
 export class ZkLauncher{
     private settingsManager: SettingsManager
-    private mapThumbnailIndex = new Map<string, string>()
-    private mapThumbnailIndexBasePath = ''
     platform = "win64"
     engine_binary = "spring"
     engines = new Map()
@@ -229,12 +227,152 @@ export class ZkLauncher{
         return result.sort((a, b) => a.name.localeCompare(b.name))
     }
 
-    getMapThumbnailPath(mapName: string): string | null {
-        this.ensureMapThumbnailIndex()
+    getWidgetsDirectory(): string {
+        return path.join(this.basePath, 'LuaUI', 'Widgets')
+    }
 
-        for (const candidate of this.getMapThumbnailLookupKeys(mapName)) {
-            const thumbnailPath = this.mapThumbnailIndex.get(candidate)
-            if (thumbnailPath) {
+    getHotkeys(): Array<{ action: string; keys: string[] }> {
+        const keysPath = path.join(this.basePath, 'LuaUI', 'Configs', 'zk_keys.lua')
+        if (!fs.existsSync(keysPath)) {
+            return []
+        }
+        try {
+            const content = fs.readFileSync(keysPath, 'utf-8')
+            const data = parse(content) as { keybinds?: unknown[] }
+            if (!data?.keybinds || !Array.isArray(data.keybinds)) return []
+
+            const result: Array<{ action: string; keys: string[] }> = []
+            for (const entry of data.keybinds) {
+                if (!Array.isArray(entry) || entry.length < 2) continue
+                const action = entry[0] as string
+                const binding = entry[1]
+                const keys = Array.isArray(binding) ? binding as string[] : [binding as string]
+                result.push({ action, keys })
+            }
+            return result
+        } catch {
+            return []
+        }
+    }
+
+    private parseWidgetInfo(filePath: string): { name?: string; desc?: string; author?: string; date?: string; license?: string } {
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8')
+            // Find the GetInfo block - look for the return table inside widget:GetInfo()
+            const getInfoMatch = content.match(/function\s+widget:GetInfo\s*\(\s*\)\s*\n?\s*return\s*\{([^}]+)\}/)
+            if (!getInfoMatch) return {}
+
+            const block = getInfoMatch[1]
+            const extract = (key: string): string | undefined => {
+                const m = block.match(new RegExp(`${key}\\s*=\\s*"([^"]*)"`) ) ??
+                          block.match(new RegExp(`${key}\\s*=\\s*'([^']*)'`))
+                return m?.[1]
+            }
+
+            return {
+                name: extract('name'),
+                desc: extract('desc'),
+                author: extract('author'),
+                date: extract('date'),
+                license: extract('license'),
+            }
+        } catch {
+            return {}
+        }
+    }
+
+    getAvailableWidgets(): Array<{
+        filename: string
+        name: string
+        path: string
+        size: number
+        modifiedAt: number
+        enabled: boolean
+        desc?: string
+        author?: string
+        date?: string
+        license?: string
+    }> {
+        const widgetsDirectory = this.getWidgetsDirectory()
+        if (!fs.existsSync(widgetsDirectory)) {
+            return []
+        }
+
+        return fs.readdirSync(widgetsDirectory, { withFileTypes: true })
+            .filter((entry) => entry.isFile() && (entry.name.endsWith('.lua') || entry.name.endsWith('.lua.disabled')))
+            .map((entry) => {
+                const fullPath = path.join(widgetsDirectory, entry.name)
+                const stats = fs.statSync(fullPath)
+                const enabled = entry.name.endsWith('.lua') && !entry.name.endsWith('.lua.disabled')
+                const info = this.parseWidgetInfo(fullPath)
+                return {
+                    filename: entry.name,
+                    name: info.name ?? entry.name.replace(/\.disabled$/, ''),
+                    path: fullPath,
+                    size: stats.size,
+                    modifiedAt: stats.mtimeMs,
+                    enabled,
+                    desc: info.desc,
+                    author: info.author,
+                    date: info.date,
+                    license: info.license,
+                }
+            })
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+    }
+
+    toggleWidget(widgetPath: string, enabled: boolean): { success: boolean; newPath: string } {
+        const widgetsDirectory = this.getWidgetsDirectory()
+        const resolved = path.resolve(widgetPath)
+        if (!resolved.startsWith(path.resolve(widgetsDirectory))) {
+            return { success: false, newPath: widgetPath }
+        }
+
+        let newPath: string
+        if (enabled) {
+            // Enable: remove .disabled suffix
+            newPath = resolved.replace(/\.disabled$/, '')
+        } else {
+            // Disable: add .disabled suffix
+            newPath = resolved.endsWith('.disabled') ? resolved : resolved + '.disabled'
+        }
+
+        if (resolved === newPath) {
+            return { success: true, newPath }
+        }
+
+        try {
+            fs.renameSync(resolved, newPath)
+            return { success: true, newPath }
+        } catch {
+            return { success: false, newPath: widgetPath }
+        }
+    }
+
+    getWidgetContent(widgetPath: string): string | null {
+        const widgetsDirectory = this.getWidgetsDirectory()
+        // Security: ensure the path is inside the widgets directory
+        const resolved = path.resolve(widgetPath)
+        if (!resolved.startsWith(path.resolve(widgetsDirectory))) {
+            return null
+        }
+        try {
+            return fs.readFileSync(resolved, 'utf-8')
+        } catch {
+            return null
+        }
+    }
+
+    getMapThumbnailPath(mapName: string): string | null {
+        const thumbnailDirectory = this.getMapThumbnailDirectory()
+        if (!fs.existsSync(thumbnailDirectory)) {
+            return null
+        }
+
+        const thumbnailBaseName = mapName.trim().replace(/ /g, '_')
+        for (const extension of ['.jpg', '.jpeg', '.png', '.dds']) {
+            const thumbnailPath = path.join(thumbnailDirectory, `${thumbnailBaseName}${extension}`)
+            if (fs.existsSync(thumbnailPath)) {
                 return thumbnailPath
             }
         }
@@ -456,52 +594,8 @@ export class ZkLauncher{
         }
     }
 
-    private ensureMapThumbnailIndex(): void {
-        if (this.mapThumbnailIndexBasePath === this.basePath && this.mapThumbnailIndex.size > 0) {
-            return
-        }
-
-        this.mapThumbnailIndex.clear()
-        this.mapThumbnailIndexBasePath = this.basePath
-
-        const thumbnailDirectories = [
-            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
-            path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride'),
-            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail'),
-            path.join(this.basePath, 'games', 'therxlobby.sdd', 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapOverride')
-        ]
-
-        for (const directory of thumbnailDirectories) {
-            if (!fs.existsSync(directory)) {
-                continue
-            }
-
-            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-                if (!entry.isFile()) {
-                    continue
-                }
-
-                const extension = path.extname(entry.name).toLowerCase()
-                if (!['.png', '.jpg', '.jpeg', '.dds'].includes(extension)) {
-                    continue
-                }
-
-                const key = path.basename(entry.name, extension).toLowerCase()
-                if (!this.mapThumbnailIndex.has(key)) {
-                    this.mapThumbnailIndex.set(key, path.join(directory, entry.name))
-                }
-            }
-        }
-    }
-
-    private getMapThumbnailLookupKeys(mapName: string): string[] {
-        const normalizedWhitespace = mapName.trim().replace(/\s+/g, ' ')
-        return Array.from(new Set([
-            normalizedWhitespace.toLowerCase(),
-            normalizedWhitespace.replace(/\s+/g, '_').toLowerCase(),
-            normalizedWhitespace.replace(/[^\w.-]+/g, '_').toLowerCase(),
-            normalizedWhitespace.replace(/\s+/g, '').toLowerCase()
-        ]))
+    private getMapThumbnailDirectory(): string {
+        return path.join(this.basePath, 'LuaMenu', 'configs', 'gameConfig', 'zk', 'minimapThumbnail')
     }
 
 

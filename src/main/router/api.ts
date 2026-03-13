@@ -1,6 +1,7 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import { on } from 'events'
+import fs from 'node:fs'
 import path from 'node:path'
 import type { Context } from './context'
 
@@ -164,6 +165,32 @@ export const appRouter = t.router({
     return opts.ctx.zk_launcher.getAvailableMaps()
   }),
 
+  getWidgets: t.procedure.query((opts) => {
+    const directory = opts.ctx.zk_launcher.getWidgetsDirectory()
+    return {
+      directory,
+      exists: fs.existsSync(directory),
+      widgets: opts.ctx.zk_launcher.getAvailableWidgets()
+    }
+  }),
+
+  getHotkeys: t.procedure.query((opts) => {
+    return opts.ctx.zk_launcher.getHotkeys()
+  }),
+
+  toggleWidget: t.procedure
+    .input(z.object({ path: z.string(), enabled: z.boolean() }))
+    .mutation((opts) => {
+      return opts.ctx.zk_launcher.toggleWidget(opts.input.path, opts.input.enabled)
+    }),
+
+  getWidgetContent: t.procedure
+    .input(z.object({ path: z.string() }))
+    .query((opts) => {
+      const content = opts.ctx.zk_launcher.getWidgetContent(opts.input.path)
+      return { content }
+    }),
+
   startSkirmish: t.procedure
     .input(z.object({
       mapName: z.string(),
@@ -182,9 +209,20 @@ export const appRouter = t.router({
     }),
 
   testDownload: t.procedure.mutation(async (opts) => {
-    opts.ctx.zerokDownloader.testDownload()
+    await opts.ctx.zerokDownloader.testDownload()
     return { success: true }
   }),
+
+  getDownloadStatuses: t.procedure
+    .query((opts) => {
+      return opts.ctx.zerokDownloader.getDownloadStatuses()
+    }),
+
+  queueMapThumbnailDownload: t.procedure
+    .input(z.object({ mapName: z.string() }))
+    .mutation(async (opts) => {
+      return await opts.ctx.zerokDownloader.queueMapThumbnailDownload(opts.input.mapName)
+    }),
 
   analyzeReplay: t.procedure
     .input(z.object({ filename: z.string() }))

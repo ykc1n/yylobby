@@ -20,7 +20,8 @@ export default function HomePage(): JSX.Element {
   const { testDownload } = useActions()
 
   return (
-    <div className="min-h-[calc(100vh-52px)] grid grid-cols-3 grid-rows-6  p-6">
+    <div className="h-full overflow-auto p-6">
+      <div className="grid min-h-full grid-cols-3 grid-rows-6">
       {/* Main Glassy Panel */}
       <GlassPanel className="relative max-w-6xl col-span-1 row-span-4 rounded-2xl p-6">
         {/* Hex Grid Background for main panel */}
@@ -84,6 +85,7 @@ export default function HomePage(): JSX.Element {
         </div>
       </div>
       </GlassPanel>
+      </div>
     </div>
   )
 }
