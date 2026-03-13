@@ -43,8 +43,8 @@ export default function DownloadsPage(): JSX.Element {
   const activeCount = downloads.filter((download) => download.status === 'queued' || download.status === 'running').length
 
   return (
-    <div className="min-h-[calc(100vh-52px)] p-6">
-      <div className="max-w-5xl mx-auto space-y-4">
+    <div className="h-full overflow-auto pr-1">
+      <div className="mx-auto max-w-5xl space-y-4">
         <GlassPanel className="p-6 rounded-2xl">
           <div className="flex items-start justify-between gap-6">
             <div>

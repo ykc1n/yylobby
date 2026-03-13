@@ -142,10 +142,12 @@ function TeamBox({ team, theme }: { team: Team; theme: typeof themeColors[keyof 
 
 function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: typeof themeColors[keyof typeof themeColors] }): JSX.Element {
   const [inputValue, setInputValue] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
   }, [messages.length])
 
   const handleSend = (): void => {
@@ -168,7 +170,7 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
         <h3 className="text-sm font-normal text-neutral-300 tracking-[0.1em] uppercase">Battle Chat</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className="group">
             <div className="flex items-baseline gap-2 mb-0.5">
@@ -180,7 +182,6 @@ function BattleRoomChat({ messages, theme }: { messages: ChatMessage[]; theme: t
             <p className="text-sm text-neutral-400 leading-relaxed break-words">{msg.text}</p>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
       {/* yes no vote */}
       <div className="p-3 border-t border-white/[0.06]">

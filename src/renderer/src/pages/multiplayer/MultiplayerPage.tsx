@@ -124,9 +124,9 @@ export default function MultiplayerPage(): JSX.Element {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Sub-navbar */}
-      <div className="bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex items-center gap-1 px-3 py-1">
+      <div className="shrink-0 bg-black/30 backdrop-blur-xl border-b border-white/[0.08] flex items-center gap-1 px-3 py-1">
         <button onClick={() => setActiveTab('battles')} className={navLinkClass('battles')}>
           Battles
         </button>
@@ -146,7 +146,7 @@ export default function MultiplayerPage(): JSX.Element {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-3 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden p-3">
         {activeTab === 'battleroom' ? (
           <BattleRoom />
         ) : (

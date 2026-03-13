@@ -369,8 +369,8 @@ function SelectedReplay(props:{
             <MapThumbnail
                 mapName={props.replayData.map}
                 thumbnailPath={props.replayData.mapThumbnailPath}
-                className="aspect-video rounded-lg mb-4 border border-white/10 bg-neutral-800/50"
-                iconClassName="w-10 h-10 text-neutral-700"
+                className="w-28 h-28 rounded-lg mb-4 border border-white/10 bg-neutral-800/50"
+                iconClassName="w-8 h-8 text-neutral-700"
             />
 
             <h3 className="text-base font-normal tracking-wide text-white/90 mb-1">{props.replayData.gameType} on {props.replayData.map}</h3>

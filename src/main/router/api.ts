@@ -1,6 +1,7 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
 import { on } from 'events'
+import fs from 'node:fs'
 import path from 'node:path'
 import type { Context } from './context'
 
@@ -163,6 +164,32 @@ export const appRouter = t.router({
   getAvailableMaps: t.procedure.query((opts) => {
     return opts.ctx.zk_launcher.getAvailableMaps()
   }),
+
+  getWidgets: t.procedure.query((opts) => {
+    const directory = opts.ctx.zk_launcher.getWidgetsDirectory()
+    return {
+      directory,
+      exists: fs.existsSync(directory),
+      widgets: opts.ctx.zk_launcher.getAvailableWidgets()
+    }
+  }),
+
+  getHotkeys: t.procedure.query((opts) => {
+    return opts.ctx.zk_launcher.getHotkeys()
+  }),
+
+  toggleWidget: t.procedure
+    .input(z.object({ path: z.string(), enabled: z.boolean() }))
+    .mutation((opts) => {
+      return opts.ctx.zk_launcher.toggleWidget(opts.input.path, opts.input.enabled)
+    }),
+
+  getWidgetContent: t.procedure
+    .input(z.object({ path: z.string() }))
+    .query((opts) => {
+      const content = opts.ctx.zk_launcher.getWidgetContent(opts.input.path)
+      return { content }
+    }),
 
   startSkirmish: t.procedure
     .input(z.object({
