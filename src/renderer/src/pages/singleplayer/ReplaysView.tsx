@@ -513,7 +513,7 @@ export default function ReplaysVeiw():JSX.Element{
     }
 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden">
             {analysisStatuses.length > 0 && (
                 <div className="mx-4 mt-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
                     <div className="mb-3 text-sm text-amber-200/90 tracking-wide">
