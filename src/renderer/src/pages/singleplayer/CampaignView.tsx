@@ -54,7 +54,7 @@ export default function CampaignView(): JSX.Element {
   const totalCount = campaign?.missions.length ?? 0
 
   return (
-    <div className="h-[calc(100vh-100px)] p-6 overflow-auto">
+    <div className="h-full p-6 overflow-auto">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6">
